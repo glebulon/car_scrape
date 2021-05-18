@@ -128,6 +128,7 @@ def cargurus_get_details(elements, model, url):
             for a in element.find_all('a', href=True):
                 print("Getting details for:", a['href'])
                 car_details.append(cargurus_car_details(url, a['href'], model))
+    car_details = [entry for entry in car_details if entry != '']
     return car_details
 
 def cargurus_cars(model = "camry", year = "", zip = "02062", distance = "3", number_of_listings = 0):
@@ -150,15 +151,24 @@ def cargurus_cars(model = "camry", year = "", zip = "02062", distance = "3", num
     page = 1
     elements = cargurus_load_page(driver)
     # find hrefs and get details of all cars
-    cargurus_cars.append(cargurus_get_details(elements, model, url))
+    new_details = cargurus_get_details(elements, model, url)
+    # append details to our master list
+    for x in new_details:
+        cargurus_cars.append(x)
+
     # if number of listings loaded is less than desired check if there are more pages
-    while len(cargurus_cars[0]) < number_of_listings and number_of_listings != 0:
+    # this will not be granular, if you ask for 20 but there is 15 on the page
+    # you'll load page 2, and can get 30 listings
+    while len(cargurus_cars) < number_of_listings and number_of_listings != 0:
         page += 1
         # load page
         driver.get(url + "#resultsPage=" + str(page))
         elements = cargurus_load_page(driver)
-        cargurus_cars[0].append(cargurus_get_details(elements, model, url)[0])
-    return cargurus_cars[0]
+        # get new details and add all elements of the list into master list
+        new_details = cargurus_get_details(elements, model, url)
+        for x in new_details:
+            cargurus_cars.append(x)
+    return cargurus_cars
 
 def write_to_csv(date="yes", header="yes", file_name="", payload=None):
     os.environ['TZ'] = 'NewYork'
