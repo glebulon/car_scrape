@@ -1,19 +1,17 @@
 #!/usr/bin/python
 
-import argparse
 import csv
 import json
 import os
 import re
 import time
-import urllib.request
+from datetime import datetime
 
-import pandas as pd
+import pytz
 from bs4 import BeautifulSoup
 from fuzzysearch import find_near_matches
-from lxml import etree
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -22,7 +20,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 user_agent = r"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) \
     Chrome/68.0.3440.84 Safari/537.36"
 options = webdriver.ChromeOptions()
-options.headless = False
+options.headless = True
 options.add_argument("--window-size=1920,1080")
 options.add_argument(user_agent)
 options.add_argument("--disable-gpu")
@@ -31,16 +29,16 @@ chrome_driver_binary = r"D:\my documents\car_scrape\chromedriver.exe"
 driver = webdriver.Chrome(chrome_driver_binary, chrome_options=options)
 
 
-
 cars_com_url = "https://www.autotrader.com/cars-for-sale/all-cars/ferrari/458-italia/reading-ma-01867?dma=&searchRadius=0&\
        location=&marketExtension=off&isNewSearch=true&showAccelerateBanner=false&sortBy=relevance&numRecords=25"
 
-def checkKey(dict, key):
+
+def checkAndGetKey(dict, key):
     if key in dict.keys():
         return dict[key]
     else:
-        return None
-  
+        return ""
+
 
 def cargurus_car_details(url, href, model):
     driver.get(url + href)
@@ -54,17 +52,17 @@ def cargurus_car_details(url, href, model):
         current_car_html = driver.page_source
         current_car_soup = BeautifulSoup(current_car_html, 'html.parser')
         # data model is follows
-        #[year, make, model, transmission, price, drive, fuel, exterior color, interior, vin, dealership link ]
+        # [year, make, model, transmission, price, drive, fuel, exterior color, interior, vin, dealership link ]
         current_car_info = []
         year_make_model = current_car_soup.find_all(class_="_2Nz9KW")[0].text
         # add year
         current_car_info.append(year_make_model.split()[0])
         # add make and model
         # do some searching and formatting
-        nm_model = find_near_matches(model, year_make_model[5:].split('-')[0], max_l_dist=7, max_deletions=2, 
-                                    max_insertions=2)[0].matched
-        full_model = (nm_model + ' ' + re.sub('.*' + nm_model, '', year_make_model[5:].split('-')[0], count=1, 
-                                            flags=0)).strip()
+        nm_model = find_near_matches(model, year_make_model[5:].split(' - ')[0], max_l_dist=7, max_deletions=2,
+                                     max_insertions=2)[0].matched
+        full_model = (nm_model + ' ' + re.sub('.*' + nm_model, '', year_make_model[5:].split(' - ')[0], count=1,
+                                              flags=0)).strip()
         make = year_make_model[5:].split('-')[0].split(full_model)[0].strip()
         current_car_info.append(make)
         current_car_info.append(full_model)
@@ -75,28 +73,21 @@ def cargurus_car_details(url, href, model):
         details = {}
         for i in fields:
             details[i.text.strip(':')] = values[element].text
-            element = element+1
+            element += 1
         # add transmission
-        x = checkKey(details, "Transmission")
-        current_car_info.append("" if x is None else x)
+        current_car_info.append(checkAndGetKey(details, "Transmission"))
         # add price
-        x = checkKey(details, "Dealer's Price")
-        current_car_info.append("" if x is None else x)
+        current_car_info.append(checkAndGetKey(details, "Dealer's Price"))
         # add drive
-        x = checkKey(details, "Drivetrain")
-        current_car_info.append("" if x is None else x)
+        current_car_info.append(checkAndGetKey(details, "Drivetrain"))
         # add fuel
-        x = checkKey(details, "Fuel Type")
-        current_car_info.append("" if x is None else x)
+        current_car_info.append(checkAndGetKey(details, "Fuel Type"))
         # add exterior
-        x = checkKey(details, "Exterior Color")
-        current_car_info.append("" if x is None else x)
+        current_car_info.append(checkAndGetKey(details, "Exterior Color"))
         # add interior
-        x = checkKey(details, "Interior Color")
-        current_car_info.append("" if x is None else x)
+        current_car_info.append(checkAndGetKey(details, "Interior Color"))
         # add vin
-        x = checkKey(details, "VIN")
-        current_car_info.append("" if x is None else x)
+        current_car_info.append(checkAndGetKey(details, "VIN"))
         # add dealer link
         current_car_info.append(current_car_soup.find_all(class_="_4ipBMn")[0].text)
         return current_car_info
@@ -104,6 +95,7 @@ def cargurus_car_details(url, href, model):
         print(e)
         return ""
 
+# load the page and waits for a specific element to be there
 def cargurus_load_page(driver):
     timeout = 60
     # wait for the javascript to load
@@ -113,11 +105,12 @@ def cargurus_load_page(driver):
         print("Timed out waiting for page to load")
 
     html = driver.page_source
-    # 
     soup = BeautifulSoup(html, 'html.parser')
     elements = soup.find_all("div", {"class": "EUQoKn"})
     return elements
 
+
+# fetches car links and returns car information
 def cargurus_get_details(elements, model, url):
     # find hrefs and get details of all cars
     car_details = []
@@ -131,7 +124,8 @@ def cargurus_get_details(elements, model, url):
     car_details = [entry for entry in car_details if entry != '']
     return car_details
 
-def cargurus_cars(model = "camry", year = "", zip = "02062", distance = "3", number_of_listings = 0):
+
+def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0):
     # look up the code for the model of car
     f = open('models_lower_case.json',)
     models = json.load(f)
@@ -170,26 +164,47 @@ def cargurus_cars(model = "camry", year = "", zip = "02062", distance = "3", num
             cargurus_cars.append(x)
     return cargurus_cars
 
-def write_to_csv(date="yes", header="yes", file_name="", payload=None):
-    os.environ['TZ'] = 'NewYork'
-    time_stamp = time.strftime('%Y-%m-%d--%I-%M-%p-')
-    with open(time_stamp + file_name + '.csv', 'w', newline='') as file:
-        writer = csv.writer(file)
+
+def date_stamp():
+    EST = pytz.timezone('America/New_York')
+    return(time.strftime('%Y-%m-%d--%I-%M-%p-'))
+
+
+def write_to_csv(header="yes", file_name="", payload=None, source="cargurus"):
+
+    with open(file_name + '.csv', 'a+', newline='') as file:
+        writer = csv.writer(file, dialect='excel')
         if header == "yes":
-            writer.writerow(["year", "make", "model", "transmission", "price", "drive", "fuel", "exterior color", 
-            "interior", "vin", "dealership link"])
+            writer.writerow(["year", "make", "model", "transmission", "price", "drive", "fuel", "exterior color",
+                             "interior", "vin", "dealership link", "carfax", "source"])
         for entry in payload:
             if entry != "":
+                entry.append("")
+                entry.append(source)
                 writer.writerow(entry)
+
+
+def remove_empty_lines(file):
+    with open(file) as myFile:
+        lines = myFile.readlines()
+    with open(file, 'w', newline="") as myFile:
+        myFile.writelines([item for item in lines if item != ''])
 
 
 def main():
     cars = []
-    cars = cars + cargurus_cars(model = "corvette", year = "", zip = "02062", distance = "90", 
-                                number_of_listings = 50)
-    print(cars)
+    file_name_stamp = date_stamp()
+    file_name = file_name_stamp + "test"
+    cars = cars + cargurus_cars(model="s-class", year="", zip="02062", distance="90",
+                                number_of_listings=10)
+    # write_to_csv(header="yes", payload=cars, file_name=file_name)
+    cars = cars + cargurus_cars(model="c-class", year="", zip="02062", distance="90",
+                                number_of_listings=10)
+    cars = cars + cargurus_cars(model="corvette", year="", zip="01864", distance="30",
+                                number_of_listings=10)
     driver.close()
-    write_to_csv(date="yes", header="yes", file_name="fuck_you", payload=cars)
+    write_to_csv(header="yes", payload=cars, file_name=file_name)
+
 if __name__ == "__main__":
     # execute only if run as a script
     main()
