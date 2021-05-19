@@ -47,25 +47,21 @@ def cargurus_car_details(url, href, model):
         # wait for details to load
         WebDriverWait(driver, timeout).until(EC.visibility_of_element_located((By.CLASS_NAME, "_5PSqaB")))
     except TimeoutException:
-        print("Timed out waiting for page to load")
+        # print("Timed out waiting for page to load")
+        pass
     try:
         current_car_html = driver.page_source
         current_car_soup = BeautifulSoup(current_car_html, 'html.parser')
         # data model is follows
-        # [year, make, model, transmission, price, drive, fuel, exterior color, interior, vin, dealership link ]
+        # [year, make-model, transmission, mileage, price, drive, fuel, exterior color, interior, vin, dealership link,
+        # dealership town, distance from zip ]
         current_car_info = []
         year_make_model = current_car_soup.find_all(class_="_2Nz9KW")[0].text
         # add year
-        current_car_info.append(year_make_model.split()[0])
-        # add make and model
-        # do some searching and formatting
-        nm_model = find_near_matches(model, year_make_model[5:].split(' - ')[0], max_l_dist=7, max_deletions=2,
-                                     max_insertions=2)[0].matched
-        full_model = (nm_model + ' ' + re.sub('.*' + nm_model, '', year_make_model[5:].split(' - ')[0], count=1,
-                                              flags=0)).strip()
-        make = year_make_model[5:].split('-')[0].split(full_model)[0].strip()
-        current_car_info.append(make)
-        current_car_info.append(full_model)
+        current_car_info.append(year_make_model[:4])
+        # add make/model
+        make_model = year_make_model[5:].split(' - ')[0]
+        current_car_info.append(make_model)
         # get all info available
         values = current_car_soup.find_all(class_="_5grpKY")
         fields = current_car_soup.find_all(class_="aHpS63")
@@ -74,25 +70,21 @@ def cargurus_car_details(url, href, model):
         for i in fields:
             details[i.text.strip(':')] = values[element].text
             element += 1
-        # add transmission
-        current_car_info.append(checkAndGetKey(details, "Transmission"))
-        # add price
-        current_car_info.append(checkAndGetKey(details, "Dealer's Price"))
-        # add drive
-        current_car_info.append(checkAndGetKey(details, "Drivetrain"))
-        # add fuel
-        current_car_info.append(checkAndGetKey(details, "Fuel Type"))
-        # add exterior
-        current_car_info.append(checkAndGetKey(details, "Exterior Color"))
-        # add interior
-        current_car_info.append(checkAndGetKey(details, "Interior Color"))
-        # add vin
-        current_car_info.append(checkAndGetKey(details, "VIN"))
+        # list of info that we need
+        elements_list = ["Transmission", "Mileage", "Dealer's Price", "Drivetrain", "Fuel Type", "Exterior Color", "Interior Color", "VIN"]
+        # pull out info for each and append
+        for e in elements_list:
+            current_car_info.append(checkAndGetKey(details, e))
         # add dealer link
         current_car_info.append(current_car_soup.find_all(class_="_4ipBMn")[0].text)
+        # distance from zipcode
+        distance_town = current_car_soup.find_all(class_="_3CFFR5")[0].text
+        current_car_info.append(distance_town.split("·")[0].strip())
+        current_car_info.append(distance_town.split("·")[1].strip())
+        # return data
         return current_car_info
     except Exception as e:
-        print(e)
+        # print(e)
         return ""
 
 # load the page and waits for a specific element to be there
@@ -102,7 +94,8 @@ def cargurus_load_page(driver):
     try:
         WebDriverWait(driver, timeout).until(EC.visibility_of_element_located((By.ID, "cargurus-listing-search")))
     except TimeoutException:
-        print("Timed out waiting for page to load")
+        # print("Timed out waiting for page to load")
+        pass
 
     html = driver.page_source
     soup = BeautifulSoup(html, 'html.parser')
@@ -119,7 +112,6 @@ def cargurus_get_details(elements, model, url):
             pass
         else:
             for a in element.find_all('a', href=True):
-                print("Getting details for:", a['href'])
                 car_details.append(cargurus_car_details(url, a['href'], model))
     car_details = [entry for entry in car_details if entry != '']
     return car_details
@@ -171,12 +163,12 @@ def date_stamp():
 
 
 def write_to_csv(header="yes", file_name="", payload=None, source="cargurus"):
-
     with open(file_name + '.csv', 'a+', newline='') as file:
         writer = csv.writer(file, dialect='excel')
         if header == "yes":
-            writer.writerow(["year", "make", "model", "transmission", "price", "drive", "fuel", "exterior color",
-                             "interior", "vin", "dealership link", "carfax", "source"])
+            writer.writerow(["year", "make/model", "transmission", "mileage", "price", "drive", "fuel",
+                             "exterior color", "interior", "vin", "dealership link", "dealership town",
+                             "distance from zip", "carfax", "source"])
         for entry in payload:
             if entry != "":
                 entry.append("")
@@ -195,13 +187,12 @@ def main():
     cars = []
     file_name_stamp = date_stamp()
     file_name = file_name_stamp + "test"
-    cars = cars + cargurus_cars(model="s-class", year="", zip="02062", distance="90",
-                                number_of_listings=10)
-    # write_to_csv(header="yes", payload=cars, file_name=file_name)
-    cars = cars + cargurus_cars(model="c-class", year="", zip="02062", distance="90",
-                                number_of_listings=10)
-    cars = cars + cargurus_cars(model="corvette", year="", zip="01864", distance="30",
-                                number_of_listings=10)
+    cars = cars + cargurus_cars(model="s-class", year="", zip="02062", distance="3000",
+                                number_of_listings=15)
+    # cars = cars + cargurus_cars(model="c-class", year="", zip="02062", distance="90",
+    #                             number_of_listings=10)
+    # cars = cars + cargurus_cars(model="corvette", year="", zip="01864", distance="1200",
+    #                             number_of_listings=15)
     driver.close()
     write_to_csv(header="yes", payload=cars, file_name=file_name)
 
