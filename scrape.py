@@ -20,7 +20,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 # constants
-logging.basicConfig(filename='run.log', encoding='utf-8', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', filename='run.log', encoding='utf-8',
+                    level=logging.CRITICAL, datefmt='%Y-%m-%d %H:%M:%S')
 user_agent = r"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) \
     Chrome/68.0.3440.84 Safari/537.36"
 options = webdriver.ChromeOptions()
@@ -31,10 +32,6 @@ options.add_argument("--disable-gpu")
 options.binary_location = r"C:\Program Files (x86)\Google\Chrome Beta\Application\chrome.exe"
 chrome_driver_binary = r"D:\my documents\car_scrape\chromedriver.exe"
 driver = webdriver.Chrome(chrome_driver_binary, chrome_options=options)
-
-cars_com_url = "https://www.autotrader.com/cars-for-sale/all-cars/ferrari/458-italia/reading-ma-01867?dma=&searchRadius=0&\
-       location=&marketExtension=off&isNewSearch=true&showAccelerateBanner=false&sortBy=relevance&numRecords=25"
-
 
 def carfax_login():
     with open('carfax_creds.json') as f:
@@ -54,9 +51,9 @@ def carfax_viewer(vin):
     try:
         if not WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, "cfxHdrBar"))):
             logging.error(driver.page_source)
-            carfax_login()
     except Exception as e:
-        print(e)
+        carfax_login()
+        driver.get("https://www.carfaxonline.com/vhrs/{}".format(vin))
     soup = BeautifulSoup(driver.page_source, "lxml")
     # get the columns we need
     sources = soup.find_all(class_="source-line")
@@ -76,12 +73,15 @@ def checkAndGetKey(dict, key):
         return ""
 
 
+# get information about a specific car
 def cargurus_car_details(url, href, model):
     driver.get(url + href)
     timeout = 60
     try:
         # wait for details to load
         WebDriverWait(driver, timeout).until(EC.visibility_of_element_located((By.CLASS_NAME, "_5PSqaB")))
+        # click the details tab
+        cargurus_details_tab()
     except TimeoutException:
         # print("Timed out waiting for page to load")
         pass
@@ -139,8 +139,9 @@ def cargurus_load_page(driver):
     return elements
 
 
-# fetches car links and returns car information
+# fetches car links and returns car information, wrapper function
 def cargurus_get_details(elements, model, url):
+
     # find hrefs and get details of all cars
     car_details = []
     for element in elements:
@@ -152,9 +153,41 @@ def cargurus_get_details(elements, model, url):
     car_details = [entry for entry in car_details if entry != '']
     return car_details
 
-
 def cargurus_next_page_exists(driver):
     return "page-navigation-next-page" in driver.page_source
+
+def cargurus_wait_to_load():
+    WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CLASS_NAME, "_3K15rt")))
+
+def cargurus_next_page(first=True):
+    if first:
+        cargurus_button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf >\
+            div._5K96zi._3QziWR > div.UiqxWZ._2nqerW > div.VXnaDS._55Yy37 > button')
+    else:
+        cargurus_button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf >\
+            div._5K96zi._3QziWR > div.UiqxWZ._2nqerW > div.VXnaDS._55Yy37 > button:nth-child(4)')
+
+def cargurus_button_click(type, identifier):
+    try:
+        if type == "class_name":
+            driver.find_element_by_class_name(identifier).click()
+        if type == "xpath":
+            driver.find_element_by_xpath(identifier).click()
+        if type == "selector":
+            driver.find_element_by_css_selector(identifier).click()
+    except Exception as e:
+        logging.error(e)
+    cargurus_wait_to_load()
+
+def cargurus_details_tab():
+    logging.critical("Clicking the details tab")
+    try:
+        cargurus_button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div._36TanG > div._24ffzL > \
+            div._5jSLnT > div:nth-child(4) > ul > li._46hqDA.ZGdsg6')
+        cargurus_button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div._36TanG > div._24ffzL > \
+            div._5jSLnT > div:nth-child(4) > ul > li:nth-child(2)')
+    except Exception as e:
+        pass
 
 
 def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0):
@@ -171,6 +204,8 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
 
     # load page
     driver.get(url)
+    # wait to load
+    cargurus_wait_to_load()
     # create a list of cars
     cargurus_cars = []
     page = 1
@@ -181,25 +216,27 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
     for x in new_details:
         cargurus_cars.append(x)
 
-    # if number of listings loaded is less than desired check if there are more pages
+    # if number of listings loaded is less than desired and there are more pages then next page will be loaded
     # this will not be granular, if you ask for 20 but there is 15 on the page
     # you'll load page 2, and can get 30 listings
     # go back before checking
-    driver.get(url)
+    cargurus_button_click('class_name', '_2aBVWp')
     while len(cargurus_cars) < number_of_listings and number_of_listings != 0 and cargurus_next_page_exists(driver):
+        # go to next page, different locators if page 1 or not
+        if page == 1:
+            cargurus_next_page(first=True)
+        else:
+            cargurus_next_page(first=False)
         page += 1
-        logging.info("Fetching more cars")
-        logging.info(driver.page_source)
-        # load page
-        driver.get(url + "#resultsPage=" + str(page))
+        logging.critical("Fetching more cars")
         elements = cargurus_load_page(driver)
         # get new details and add all elements of the list into master list
         new_details = cargurus_get_details(elements, model, url)
         for x in new_details:
             cargurus_cars.append(x)
-        # load page
-        driver.get(url + "#resultsPage=" + str(page))
-    logging.info("Number of cars: {}".format(len(cargurus_cars)))
+        # back to results
+        cargurus_button_click('class_name', '_2aBVWp')
+    logging.critical("Number of cars: {}".format(len(cargurus_cars)))
     return cargurus_cars
 
 
@@ -209,7 +246,7 @@ def date_stamp():
 
 
 def write_to_csv(header="yes", file_name="", payload=None, source="cargurus"):
-    with open(file_name + '.csv', 'a+', newline='') as file:
+    with open(r'reports/' + file_name + '.csv', 'a+', newline='') as file:
         writer = csv.writer(file, dialect='excel')
         if header == "yes":
             writer.writerow(["year", "make/model", "transmission", "mileage", "price", "drive", "fuel",
@@ -236,27 +273,33 @@ def populate_carfax_info(cars):
         car.append(results[1])
     return cars
 
+# read in search
+def search_read():
+    with open('settings/searches.json') as f:
+        return(json.load(f))
 
 def main():
-    # carfax_viewer("WDDUG8FB6EA054379") # no accident
-    # carfax_viewer("JF1VA1B69G9819563") # 1 accident
-    # carfax_viewer("JF1VA1J6XG8800589") # 6 accidents
-    # carfax_viewer("JF1VA1A61J9839671") # title problem
-    logging.info("Start: " + time.strftime('%Y-%m-%d--%I-%M-%S'))
+    logging.critical("Start")
     cars = []
-    file_name_stamp = date_stamp()
-    file_name = file_name_stamp + "test"
+    file_name = date_stamp() + "corvette"
     # get the car listings
-    cars = cars + cargurus_cars(model="impreza wrx", year="", zip="02062", distance="300",
-                                number_of_listings=100)
-    logging.info("Number of cars found: {}".format(len(cars)))
+    criteria = search_read()
+    # run search
+    for c in criteria:
+        cars = cars + cargurus_cars(model=c['model'], year="", zip=c['zipcode'], distance=c['distance'], 
+                                    number_of_listings=c['number_of_listings'])
+
+    # cars = cars + cargurus_cars(model="wrx", year="", zip="01602", distance="10",
+    #                             number_of_listings=50)
+    logging.critical("Number of cars found: {}".format(len(cars)))
     # populate the carfax history
     cars = populate_carfax_info(cars)
     # close the window
     driver.close()
     # write to csv file
     write_to_csv(header="yes", payload=cars, file_name=file_name)
-    logging.info("End: " + time.strftime('%Y-%m-%d--%I-%M-%S'))
+    logging.critical("Cars found: {}".format(len(cars)))
+    logging.critical("End")
 if __name__ == "__main__":
     # execute only if run as a script
     main()
