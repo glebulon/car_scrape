@@ -1,9 +1,11 @@
-[{
-	"model": "camry",
+[
+	{
+	"model": "corolla",
 	"start_year": "",
 	"end_year": "",
 	"zipcode": "01602",
-	"distance": 500,
-	"deal_quality": "great",
-	"number_of_listings": 10
+	"distance": 1000,
+	"deal_quality": "",
+	"number_of_listings": 100,
+	"file_suffix": "corolla"
 }]

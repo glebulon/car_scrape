@@ -141,17 +141,11 @@ def cargurus_load_page(driver):
 
 
 # fetches car links and returns car information, wrapper function
-def cargurus_get_details(elements, model, url, deal_quality):
+def cargurus_get_details(elements, model, url):
     # find hrefs and get details of all cars
     car_details = []
     for element in elements:
         if ("Sponsored") in element.text:
-            pass
-        # if great is chosen skip anything not great
-        elif deal_quality == "great" and ("GREAT DEAL") not in element.text:
-            pass
-        # if good is chosen then loook for either good or great deal
-        elif deal_quality == "good" and ("GREAT DEAL") not in element.text and ("GOOD DEAL") not in element.text:
             pass
         else:
             for a in element.find_all('a', href=True):
@@ -235,7 +229,7 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
     page = 1
     elements = cargurus_load_page(driver)
     # find hrefs and get details of all cars
-    new_details = cargurus_get_details(elements, model, url, deal_quality)
+    new_details = cargurus_get_details(elements, model, url)
     # append details to our master list
     for x in new_details:
         cargurus_cars.append(x)
@@ -266,7 +260,7 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
 
 def date_stamp():
     EST = pytz.timezone('America/New_York')
-    return(time.strftime('%Y-%m-%d--%I-%M-%p-'))
+    return(time.strftime('%Y-%m-%d--%I-%M-%p'))
 
 
 def write_to_csv(header="yes", file_name="", payload=None, source="cargurus"):
@@ -305,9 +299,10 @@ def search_read():
 def main():
     logging.critical("Start")
     cars = []
-    file_name = date_stamp() + "corvette"
     # get the car listings
     criteria = search_read()
+    # output file name, add suffix if exists
+    file_name = date_stamp() if not criteria[0]['file_suffix'] else date_stamp() + '-' + criteria[0]['file_suffix']
     # run search
     for c in criteria:
         cars = cars + cargurus_cars(model=c['model'], year="", zip=c['zipcode'], distance=c['distance'],
