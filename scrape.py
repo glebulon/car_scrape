@@ -74,7 +74,7 @@ def checkAndGetKey(dict, key):
 
 
 # get information about a specific car
-def cargurus_car_details(url, href, model):
+def cargurus_car_details(url, href):
     driver.get(url + href)
     timeout = 60
     try:
@@ -118,6 +118,7 @@ def cargurus_car_details(url, href, model):
         distance_town = current_car_soup.find_all(class_="_3CFFR5")[0].text
         current_car_info.append(distance_town.split("·")[0].strip())
         current_car_info.append(distance_town.split("·")[1].strip())
+        print(current_car_info)
         # return data
         return current_car_info
     except Exception as e:
@@ -140,16 +141,21 @@ def cargurus_load_page(driver):
 
 
 # fetches car links and returns car information, wrapper function
-def cargurus_get_details(elements, model, url):
-
+def cargurus_get_details(elements, model, url, deal_quality):
     # find hrefs and get details of all cars
     car_details = []
     for element in elements:
         if ("Sponsored") in element.text:
             pass
+        # if great is chosen skip anything not great
+        elif deal_quality == "great" and ("GREAT DEAL") not in element.text:
+            pass
+        # if good is chosen then loook for either good or great deal
+        elif deal_quality == "good" and ("GREAT DEAL") not in element.text and ("GOOD DEAL") not in element.text:
+            pass
         else:
             for a in element.find_all('a', href=True):
-                car_details.append(cargurus_car_details(url, a['href'], model))
+                car_details.append(cargurus_car_details(url, a['href']))
     car_details = [entry for entry in car_details if entry != '']
     return car_details
 
@@ -167,6 +173,17 @@ def cargurus_next_page(first=True):
         cargurus_button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf >\
             div._5K96zi._3QziWR > div.UiqxWZ._2nqerW > div.VXnaDS._55Yy37 > button:nth-child(4)')
 
+# unclick the checkbox that shows cars with no price
+def cargurus_remove_no_price():
+    cargurus_button_click("css", "div > .XHYfqj > .\\_2dnSXG")
+
+# select good priced car only
+def cargurus_good_price_only(deal):
+    if deal == "good":
+        cargurus_button_click("css", ".\\_5pN1ma:nth-child(12) li:nth-child(2) .\\_2dnSXG")
+    if deal == "great":
+        cargurus_button_click("css", ".\\_5pN1ma:nth-child(13) li:nth-child(1) .\_2dnSXG")
+
 def cargurus_button_click(type, identifier):
     try:
         if type == "class_name":
@@ -175,6 +192,8 @@ def cargurus_button_click(type, identifier):
             driver.find_element_by_xpath(identifier).click()
         if type == "selector":
             driver.find_element_by_css_selector(identifier).click()
+        if type == "css":
+            driver.find_element(By.CSS_SELECTOR, identifier).click()
     except Exception as e:
         logging.error(e)
     cargurus_wait_to_load()
@@ -190,7 +209,7 @@ def cargurus_details_tab():
         pass
 
 
-def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0):
+def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0, deal_quality=""):
     # look up the code for the model of car
     f = open('models_lower_case.json',)
     models = json.load(f)
@@ -206,12 +225,17 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
     driver.get(url)
     # wait to load
     cargurus_wait_to_load()
+    # select deal if option passed
+    if deal_quality != "":
+        cargurus_good_price_only(deal_quality)
+    # uncheck cars with no price, don't want those
+    cargurus_remove_no_price()
     # create a list of cars
     cargurus_cars = []
     page = 1
     elements = cargurus_load_page(driver)
     # find hrefs and get details of all cars
-    new_details = cargurus_get_details(elements, model, url)
+    new_details = cargurus_get_details(elements, model, url, deal_quality)
     # append details to our master list
     for x in new_details:
         cargurus_cars.append(x)
@@ -286,8 +310,8 @@ def main():
     criteria = search_read()
     # run search
     for c in criteria:
-        cars = cars + cargurus_cars(model=c['model'], year="", zip=c['zipcode'], distance=c['distance'], 
-                                    number_of_listings=c['number_of_listings'])
+        cars = cars + cargurus_cars(model=c['model'], year="", zip=c['zipcode'], distance=c['distance'],
+                                    number_of_listings=c['number_of_listings'], deal_quality=c['deal_quality'])
 
     # cars = cars + cargurus_cars(model="wrx", year="", zip="01602", distance="10",
     #                             number_of_listings=50)
