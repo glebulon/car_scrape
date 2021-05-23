@@ -3,3 +3,4 @@ chromedriver.exe
 *.csv
 .vscode/*
 carfax_creds.json
+run.log

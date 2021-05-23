@@ -195,6 +195,7 @@ def cargurus_button_click(type, identifier):
         logging.error(e)
     cargurus_wait_to_load()
 
+# click the detials tab, just in case the summary shows up
 def cargurus_details_tab():
     try:
         cargurus_button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div._36TanG > div._24ffzL > \
@@ -207,13 +208,12 @@ def cargurus_details_tab():
     except Exception as e:
         pass
 
+# this is the main function, the entry point to the other ones for cargurus
 def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0, deal_quality=""):
     # look up the code for the model of car
-    f = open('models_lower_case.json',)
-    models = json.load(f)
+    with open('models_lower_case.json') as f:
+        models = json.load(f)
     model_code = models[model]
-    # Closing file
-    f.close()
     # build cargurus url
     url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}\
            &showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE&\
@@ -241,7 +241,8 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
     # if number of listings loaded is less than desired and there are more pages then next page will be loaded
     # this will not be granular, if you ask for 20 but there is 15 on the page
     # you'll load page 2, and can get 30 listings
-    # go back before checking
+
+    # go back before to search results
     cargurus_button_click('class_name', '_2aBVWp')
     while len(cargurus_cars) < number_of_listings and number_of_listings != 0 and cargurus_next_page_exists(driver):
         # go to next page, different locators if page 1 or not
@@ -304,7 +305,6 @@ def gen_unique():
     return str(uuid.uuid4()).split('-')[0]
 
 def main():
-    logging.critical("Start")
     cars = []
     # get the car listings
     searches = search_settings_read()
@@ -312,6 +312,7 @@ def main():
     for search in searches:
         file_name = date_stamp() if not search['model'] else date_stamp() + '-' + search['model'] + '-' + gen_unique()
         logging.critical("Start: " + file_name)
+        logging.critical(search)
         # run search
         cars = cars + cargurus_cars(model=search['model'], year="", zip=search['zipcode'], distance=search['distance'],
                                     number_of_listings=search['number_of_listings'],
