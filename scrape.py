@@ -6,12 +6,11 @@ import logging
 import os
 import re
 import time
+import uuid
 from datetime import datetime
 
-import pdfkit
 import pytz
 from bs4 import BeautifulSoup
-from fuzzysearch import find_near_matches
 from retrying import retry
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
@@ -25,7 +24,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', filename='
 user_agent = r"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) \
     Chrome/68.0.3440.84 Safari/537.36"
 options = webdriver.ChromeOptions()
-options.headless = False
+options.headless = True
 options.add_argument("--window-size=1920,1080")
 options.add_argument(user_agent)
 options.add_argument("--disable-gpu")
@@ -37,10 +36,13 @@ def carfax_login():
     with open('carfax_creds.json') as f:
         login = json.load(f)
     driver.get("https://www.carfaxonline.com")
-    driver.find_element_by_id('landing_signin_item-link').click()
-    WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.ID, "username"))).send_keys(login['username'])
-    WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.ID, "password"))).send_keys(login['password'])
-    driver.find_element_by_id('login_button').click()
+    try:
+        driver.find_element_by_id('landing_signin_item-link').click()
+        WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.ID, "username"))).send_keys(login['username'])
+        WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.ID, "password"))).send_keys(login['password'])
+        driver.find_element_by_id('login_button').click()
+    except Exception as e:
+        pass
     WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, "account_menu_item-link")))
 
 
@@ -176,7 +178,8 @@ def cargurus_good_price_only(deal):
     if deal == "good":
         cargurus_button_click("css", ".\\_5pN1ma:nth-child(12) li:nth-child(2) .\\_2dnSXG")
     if deal == "great":
-        cargurus_button_click("css", ".\\_5pN1ma:nth-child(13) li:nth-child(1) .\_2dnSXG")
+        cargurus_button_click("css", ".\\_5pN1ma:nth-child(13) li:nth-child(1) .\\_2dnSXG")
+
 
 def cargurus_button_click(type, identifier):
     try:
@@ -193,15 +196,16 @@ def cargurus_button_click(type, identifier):
     cargurus_wait_to_load()
 
 def cargurus_details_tab():
-    logging.critical("Clicking the details tab")
     try:
         cargurus_button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div._36TanG > div._24ffzL > \
             div._5jSLnT > div:nth-child(4) > ul > li._46hqDA.ZGdsg6')
         cargurus_button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div._36TanG > div._24ffzL > \
             div._5jSLnT > div:nth-child(4) > ul > li:nth-child(2)')
+        cargurus_button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div._36TanG > div._24ffzL > \
+            div._5jSLnT > div:nth-child(4) > ul > li:nth-child(3)')
+        cargurus_button_click('xpath', '/html/body/main/div[2]/div[1]/div[3]/div[2]/div[2]/div[2]/ul/li[3]')
     except Exception as e:
         pass
-
 
 def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0, deal_quality=""):
     # look up the code for the model of car
@@ -292,33 +296,33 @@ def populate_carfax_info(cars):
     return cars
 
 # read in search
-def search_read():
+def search_settings_read():
     with open('settings/searches.json') as f:
         return(json.load(f))
+
+def gen_unique():
+    return str(uuid.uuid4()).split('-')[0]
 
 def main():
     logging.critical("Start")
     cars = []
     # get the car listings
-    criteria = search_read()
-    # output file name, add suffix if exists
-    file_name = date_stamp() if not criteria[0]['file_suffix'] else date_stamp() + '-' + criteria[0]['file_suffix']
-    # run search
-    for c in criteria:
-        cars = cars + cargurus_cars(model=c['model'], year="", zip=c['zipcode'], distance=c['distance'],
-                                    number_of_listings=c['number_of_listings'], deal_quality=c['deal_quality'])
-
-    # cars = cars + cargurus_cars(model="wrx", year="", zip="01602", distance="10",
-    #                             number_of_listings=50)
-    logging.critical("Number of cars found: {}".format(len(cars)))
-    # populate the carfax history
-    cars = populate_carfax_info(cars)
+    searches = search_settings_read()
+    # itterate over all entries and run a full search for each
+    for search in searches:
+        file_name = date_stamp() if not search['model'] else date_stamp() + '-' + search['model'] + '-' + gen_unique()
+        # run search
+        cars = cars + cargurus_cars(model=search['model'], year="", zip=search['zipcode'], distance=search['distance'],
+                                    number_of_listings=search['number_of_listings'],
+                                    deal_quality=search['deal_quality'])
+        # populate the carfax history
+        cars = populate_carfax_info(cars)
+        # write to csv file
+        write_to_csv(header="yes", payload=cars, file_name=file_name)
+        logging.critical("Cars found: {}".format(len(cars)))
+        logging.critical("End")
     # close the window
     driver.close()
-    # write to csv file
-    write_to_csv(header="yes", payload=cars, file_name=file_name)
-    logging.critical("Cars found: {}".format(len(cars)))
-    logging.critical("End")
 if __name__ == "__main__":
     # execute only if run as a script
     main()
