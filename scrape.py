@@ -311,6 +311,7 @@ def main():
     # itterate over all entries and run a full search for each
     for search in searches:
         file_name = date_stamp() if not search['model'] else date_stamp() + '-' + search['model'] + '-' + gen_unique()
+        logging.critical("Start: " + file_name)
         # run search
         cars = cars + cargurus_cars(model=search['model'], year="", zip=search['zipcode'], distance=search['distance'],
                                     number_of_listings=search['number_of_listings'],
@@ -320,7 +321,7 @@ def main():
         # write to csv file
         write_to_csv(header="yes", payload=cars, file_name=file_name)
         logging.critical("Cars found: {}".format(len(cars)))
-        logging.critical("End")
+        logging.critical("End: " + file_name)
     # close the window
     driver.close()
 if __name__ == "__main__":
