@@ -17,19 +17,19 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-
+from selenium.webdriver.support.ui import Select
 # constants
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', filename='run.log', encoding='utf-8',
                     level=logging.CRITICAL, datefmt='%Y-%m-%d %H:%M:%S')
 user_agent = r"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) \
     Chrome/68.0.3440.84 Safari/537.36"
 options = webdriver.ChromeOptions()
-options.headless = True
+options.headless = False
 options.add_argument("--window-size=1920,1080")
 options.add_argument(user_agent)
 options.add_argument("--disable-gpu")
-options.binary_location = r"C:\Program Files (x86)\Google\Chrome Beta\Application\chrome.exe"
-chrome_driver_binary = r"D:\my documents\car_scrape\chromedriver.exe"
+options.binary_location = r"C:\Program Files\Google\Chrome Beta\Application\chrome.exe"
+chrome_driver_binary = r"C:\Users\Gleb\Documents\code\car_scrape\chromedriver.exe"
 driver = webdriver.Chrome(chrome_driver_binary, chrome_options=options)
 
 def carfax_login():
@@ -195,6 +195,7 @@ def cargurus_button_click(type, identifier):
         logging.error(e)
     cargurus_wait_to_load()
 
+# click the detials tab, just in case the summary shows up
 def cargurus_details_tab():
     try:
         cargurus_button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div._36TanG > div._24ffzL > \
@@ -207,13 +208,22 @@ def cargurus_details_tab():
     except Exception as e:
         pass
 
-def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0, deal_quality=""):
+# select the year range
+def cargurus_year_range(start, end):
+    driver.find_element_by_name("selectedStartYear").click()
+    Select(driver.find_element_by_name("selectedStartYear")).select_by_visible_text(str(start))
+    driver.find_element_by_name("selectedStartYear").click()
+    driver.find_element_by_name("selectedEndYear").click()
+    Select(driver.find_element_by_name("selectedEndYear")).select_by_visible_text(str(end))
+    driver.find_element_by_name("selectedEndYear").click()
+    driver.find_element_by_xpath("(//button[@type='submit'])[2]").click()
+# this is the main function, the entry point to the other ones for cargurus
+def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0, deal_quality="",
+                  start="", end=""):
     # look up the code for the model of car
-    f = open('models_lower_case.json',)
-    models = json.load(f)
+    with open('models_lower_case.json') as f:
+        models = json.load(f)
     model_code = models[model]
-    # Closing file
-    f.close()
     # build cargurus url
     url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}\
            &showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE&\
@@ -223,8 +233,11 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
     driver.get(url)
     # wait to load
     cargurus_wait_to_load()
+    # select years if provided
+    if start or end:
+        cargurus_year_range(start, end)
     # select deal if option passed
-    if deal_quality != "":
+    if deal_quality:
         cargurus_good_price_only(deal_quality)
     # uncheck cars with no price, don't want those
     cargurus_remove_no_price()
@@ -241,7 +254,8 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
     # if number of listings loaded is less than desired and there are more pages then next page will be loaded
     # this will not be granular, if you ask for 20 but there is 15 on the page
     # you'll load page 2, and can get 30 listings
-    # go back before checking
+
+    # go back before to search results
     cargurus_button_click('class_name', '_2aBVWp')
     while len(cargurus_cars) < number_of_listings and number_of_listings != 0 and cargurus_next_page_exists(driver):
         # go to next page, different locators if page 1 or not
@@ -304,18 +318,18 @@ def gen_unique():
     return str(uuid.uuid4()).split('-')[0]
 
 def main():
-    logging.critical("Start")
-    cars = []
     # get the car listings
     searches = search_settings_read()
     # itterate over all entries and run a full search for each
     for search in searches:
         file_name = date_stamp() if not search['model'] else date_stamp() + '-' + search['model'] + '-' + gen_unique()
         logging.critical("Start: " + file_name)
+        logging.critical(search)
         # run search
+        cars = []
         cars = cars + cargurus_cars(model=search['model'], year="", zip=search['zipcode'], distance=search['distance'],
-                                    number_of_listings=search['number_of_listings'],
-                                    deal_quality=search['deal_quality'])
+                                    number_of_listings=search['number_of_listings'], start=search['start_year'], 
+                                    end=search['end_year'], deal_quality=search['deal_quality'])
         # populate the carfax history
         cars = populate_carfax_info(cars)
         # write to csv file

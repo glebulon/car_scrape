@@ -1,6 +1,15 @@
 [
     {
-        "model": "corolla",
+        "model": "quattroporte",
+        "start_year": "2010",
+        "end_year": "2011",
+        "zipcode": "01602",
+        "distance": 100,
+        "deal_quality": "good",
+        "number_of_listings": 10
+    },
+    {
+        "model": "camaro",
         "start_year": "",
         "end_year": "",
         "zipcode": "01602",
@@ -9,7 +18,7 @@
         "number_of_listings": 10
     },
     {
-        "model": "camry",
+        "model": "corvette",
         "start_year": "",
         "end_year": "",
         "zipcode": "01602",
