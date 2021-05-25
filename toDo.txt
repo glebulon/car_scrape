@@ -1,0 +1,25 @@
+add mileage filter
+add yeAR filter--------------------------------------------done
+add days on market
+add days on cargurus
+add accidents from cargurus
+add title from cargurus
+add below/above market
+add url
+pull out trim and add to spreadsaheet
+add engine size from carfax 
+add options(leather, sunroof, navi) from cargurus
+
+
+double check filtering deal types
+remove authorized dealers from search
+remove places that offer shipping
+remove title problems from  carfax 
+
+pick out color, if not found use black
+try to pick out trim(figure out how to do that)
+
+only run clean carfax cars(accidents are ok)
+
+on carroffer, sell today price
+always no on certified selection
