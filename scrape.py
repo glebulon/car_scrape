@@ -143,15 +143,12 @@ def cargurus_load_page(driver):
 
 
 # fetches car links and returns car information, wrapper function
-def cargurus_get_details(elements, url, mileage):
+def cargurus_get_details(elements, url):
     # find hrefs and get details of all cars
     car_details = []
     for element in elements:
-        if ("Sponsored") in element.text:
-            pass
-        else:
-            for a in element.find_all('a', href=True):
-                car_details.append(cargurus_car_details(url, a['href']))
+        for a in element.find_all('a', href=True):
+            car_details.append(cargurus_car_details(url, a['href']))
     car_details = [entry for entry in car_details if entry != '']
     return car_details
 
@@ -261,7 +258,7 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
         elif mileage and cargurus_get_mileage(element) > mileage:
             elements.remove(element)
     # find hrefs and get details of all cars
-    new_details = cargurus_get_details(elements, url, mileage)
+    new_details = cargurus_get_details(elements, url)
     # append details to our master list
     for x in new_details:
         cargurus_cars.append(x)
@@ -282,7 +279,7 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
         logging.critical("Fetching more cars")
         elements = cargurus_load_page(driver)
         # get new details and add all elements of the list into master list
-        new_details = cargurus_get_details(elements, model, url, mileage)
+        new_details = cargurus_get_details(elements, url)
         for x in new_details:
             cargurus_cars.append(x)
         # back to results
