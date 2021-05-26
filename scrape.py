@@ -17,14 +17,14 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-
+from selenium.webdriver.support.ui import Select
 # constants
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', filename='run.log', encoding='utf-8',
                     level=logging.CRITICAL, datefmt='%Y-%m-%d %H:%M:%S')
 user_agent = r"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) \
     Chrome/68.0.3440.84 Safari/537.36"
 options = webdriver.ChromeOptions()
-options.headless = True
+options.headless = False
 options.add_argument("--window-size=1920,1080")
 options.add_argument(user_agent)
 options.add_argument("--disable-gpu")
@@ -143,15 +143,12 @@ def cargurus_load_page(driver):
 
 
 # fetches car links and returns car information, wrapper function
-def cargurus_get_details(elements, model, url):
+def cargurus_get_details(elements, url):
     # find hrefs and get details of all cars
     car_details = []
     for element in elements:
-        if ("Sponsored") in element.text:
-            pass
-        else:
-            for a in element.find_all('a', href=True):
-                car_details.append(cargurus_car_details(url, a['href']))
+        for a in element.find_all('a', href=True):
+            car_details.append(cargurus_car_details(url, a['href']))
     car_details = [entry for entry in car_details if entry != '']
     return car_details
 
@@ -179,6 +176,14 @@ def cargurus_good_price_only(deal):
         cargurus_button_click("css", ".\\_5pN1ma:nth-child(12) li:nth-child(2) .\\_2dnSXG")
     if deal == "great":
         cargurus_button_click("css", ".\\_5pN1ma:nth-child(13) li:nth-child(1) .\\_2dnSXG")
+
+# pull out mileage from element
+def cargurus_get_mileage(element):
+    mileage = 0
+    for i in element.find_all('p'):
+        if re.search(r" mi$", str(i.contents[0])):
+            mileage = int(str(i.contents[0]).strip(' mi').replace(',', ''))
+    return mileage
 
 
 def cargurus_button_click(type, identifier):
@@ -208,8 +213,18 @@ def cargurus_details_tab():
     except Exception as e:
         pass
 
+# select the year range
+def cargurus_year_range(start, end):
+    driver.find_element_by_name("selectedStartYear").click()
+    Select(driver.find_element_by_name("selectedStartYear")).select_by_visible_text(str(start))
+    driver.find_element_by_name("selectedStartYear").click()
+    driver.find_element_by_name("selectedEndYear").click()
+    Select(driver.find_element_by_name("selectedEndYear")).select_by_visible_text(str(end))
+    driver.find_element_by_name("selectedEndYear").click()
+    driver.find_element_by_xpath("(//button[@type='submit'])[2]").click()
 # this is the main function, the entry point to the other ones for cargurus
-def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0, deal_quality=""):
+def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0, deal_quality="",
+                  start="", end="", mileage=""):
     # look up the code for the model of car
     with open('models_lower_case.json') as f:
         models = json.load(f)
@@ -223,17 +238,27 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
     driver.get(url)
     # wait to load
     cargurus_wait_to_load()
+    # select years if provided
+    if start or end:
+        cargurus_year_range(start, end)
     # select deal if option passed
-    if deal_quality != "":
+    if deal_quality:
         cargurus_good_price_only(deal_quality)
     # uncheck cars with no price, don't want those
     cargurus_remove_no_price()
     # create a list of cars
     cargurus_cars = []
     page = 1
+    # get all cars on the page
     elements = cargurus_load_page(driver)
+    # filter out all cars that are sponsored and are above mileage threshold
+    for element in elements:
+        if "Sponsored" in element.text:
+            elements.remove(element)
+        elif mileage and cargurus_get_mileage(element) > mileage:
+            elements.remove(element)
     # find hrefs and get details of all cars
-    new_details = cargurus_get_details(elements, model, url)
+    new_details = cargurus_get_details(elements, url)
     # append details to our master list
     for x in new_details:
         cargurus_cars.append(x)
@@ -254,7 +279,7 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
         logging.critical("Fetching more cars")
         elements = cargurus_load_page(driver)
         # get new details and add all elements of the list into master list
-        new_details = cargurus_get_details(elements, model, url)
+        new_details = cargurus_get_details(elements, url)
         for x in new_details:
             cargurus_cars.append(x)
         # back to results
@@ -305,7 +330,6 @@ def gen_unique():
     return str(uuid.uuid4()).split('-')[0]
 
 def main():
-    cars = []
     # get the car listings
     searches = search_settings_read()
     # itterate over all entries and run a full search for each
@@ -314,8 +338,10 @@ def main():
         logging.critical("Start: " + file_name)
         logging.critical(search)
         # run search
+        cars = []
         cars = cars + cargurus_cars(model=search['model'], year="", zip=search['zipcode'], distance=search['distance'],
-                                    number_of_listings=search['number_of_listings'],
+                                    number_of_listings=search['number_of_listings'], start=search['start_year'],
+                                    end=search['end_year'], mileage=search['mileage'],
                                     deal_quality=search['deal_quality'])
         # populate the carfax history
         cars = populate_carfax_info(cars)
