@@ -143,7 +143,7 @@ def cargurus_load_page(driver):
 
 
 # fetches car links and returns car information, wrapper function
-def cargurus_get_details(elements, model, url):
+def cargurus_get_details(elements, url, mileage):
     # find hrefs and get details of all cars
     car_details = []
     for element in elements:
@@ -179,6 +179,14 @@ def cargurus_good_price_only(deal):
         cargurus_button_click("css", ".\\_5pN1ma:nth-child(12) li:nth-child(2) .\\_2dnSXG")
     if deal == "great":
         cargurus_button_click("css", ".\\_5pN1ma:nth-child(13) li:nth-child(1) .\\_2dnSXG")
+
+# pull out mileage from element
+def cargurus_get_mileage(element):
+    mileage = 0
+    for i in element.find_all('p'):
+        if re.search(r" mi$", str(i.contents[0])):
+            mileage = int(str(i.contents[0]).strip(' mi').replace(',', ''))
+    return mileage
 
 
 def cargurus_button_click(type, identifier):
@@ -219,7 +227,7 @@ def cargurus_year_range(start, end):
     driver.find_element_by_xpath("(//button[@type='submit'])[2]").click()
 # this is the main function, the entry point to the other ones for cargurus
 def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0, deal_quality="",
-                  start="", end=""):
+                  start="", end="", mileage=""):
     # look up the code for the model of car
     with open('models_lower_case.json') as f:
         models = json.load(f)
@@ -244,9 +252,16 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
     # create a list of cars
     cargurus_cars = []
     page = 1
+    # get all cars on the page
     elements = cargurus_load_page(driver)
+    # filter out all cars that are sponsored and are above mileage threshold
+    for element in elements:
+        if "Sponsored" in element.text:
+            elements.remove(element)
+        elif mileage and cargurus_get_mileage(element) > mileage:
+            elements.remove(element)
     # find hrefs and get details of all cars
-    new_details = cargurus_get_details(elements, model, url)
+    new_details = cargurus_get_details(elements, url, mileage)
     # append details to our master list
     for x in new_details:
         cargurus_cars.append(x)
@@ -267,7 +282,7 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
         logging.critical("Fetching more cars")
         elements = cargurus_load_page(driver)
         # get new details and add all elements of the list into master list
-        new_details = cargurus_get_details(elements, model, url)
+        new_details = cargurus_get_details(elements, model, url, mileage)
         for x in new_details:
             cargurus_cars.append(x)
         # back to results
@@ -328,8 +343,9 @@ def main():
         # run search
         cars = []
         cars = cars + cargurus_cars(model=search['model'], year="", zip=search['zipcode'], distance=search['distance'],
-                                    number_of_listings=search['number_of_listings'], start=search['start_year'], 
-                                    end=search['end_year'], deal_quality=search['deal_quality'])
+                                    number_of_listings=search['number_of_listings'], start=search['start_year'],
+                                    end=search['end_year'], mileage=search['mileage'],
+                                    deal_quality=search['deal_quality'])
         # populate the carfax history
         cars = populate_carfax_info(cars)
         # write to csv file
