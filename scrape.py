@@ -74,7 +74,6 @@ def checkAndGetKey(dict, key):
     else:
         return ""
 
-
 # get information about a specific car
 def cargurus_car_details(url, href):
     driver.get(url + href)
@@ -92,7 +91,8 @@ def cargurus_car_details(url, href):
         current_car_soup = BeautifulSoup(current_car_html, 'html.parser')
         # data model is follows
         # [year, make-model, transmission, mileage, price, drive, fuel, exterior color, interior, vin, dealership link,
-        # dealership town, distance from zip ]
+        # dealership town, distance from zip, days on cargurus, accidents from cargurus, title from cargurus,
+        # price vs market ]
         current_car_info = []
         year_make_model = current_car_soup.find_all(class_="_2Nz9KW")[0].text
         # add year
@@ -120,11 +120,27 @@ def cargurus_car_details(url, href):
         distance_town = current_car_soup.find_all(class_="_3CFFR5")[0].text
         current_car_info.append(distance_town.split("·")[0].strip())
         current_car_info.append(distance_town.split("·")[1].strip())
+        # days on cargurus
+        current_car_info.append(current_car_soup.select('#cargurus-listing-search > div:nth-child(1) > div._36TanG > \
+            div._24ffzL > div._5jSLnT > div._2Bszua._5PSqaB > div._5j5D2G > div:nth-child(1) > div._5kdMnf > \
+            div:nth-child(2) > strong')[0].text or "")
+        # accidents from cargurus
+        current_car_info.append(current_car_soup.find_all(class_="_5gudF3")[1].text or "")
+        # title issues
+        current_car_info.append(current_car_soup.find_all(class_="_5gudF3")[0].text or "")
+        # price versus market
+        # store the element
+        price_anal = current_car_soup.select("#cargurus-listing-search > div:nth-child(1) > div._36TanG > \
+        div._24ffzL > div._3Wnbei > section > div > div > section._2Xfg8g")[0]
+        # above or below
+        current_car_info.append(price_anal.contents[0].text)
+        # by how much
+        current_car_info.append(price_anal.contents[1].strip())
         print(current_car_info)
         # return data
         return current_car_info
     except Exception as e:
-        # print(e)
+        print(e)
         return ""
 
 # load the page and waits for a specific element to be there
@@ -157,6 +173,7 @@ def cargurus_next_page_exists(driver):
 
 def cargurus_wait_to_load():
     WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CLASS_NAME, "_3K15rt")))
+    time.sleep(3)
 
 def cargurus_next_page(first=True):
     if first:
@@ -173,9 +190,13 @@ def cargurus_remove_no_price():
 # select good priced car only
 def cargurus_good_price_only(deal):
     if deal == "good":
-        cargurus_button_click("css", ".\\_5pN1ma:nth-child(12) li:nth-child(2) .\\_2dnSXG")
+        cargurus_button_click("css", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
+        div._3K15rt > div:nth-child(2) > fieldset:nth-child(12) > ul > li:nth-child(2) > label > p")
+        cargurus_button_click("css", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
+        div._3K15rt > div:nth-child(2) > fieldset:nth-child(12) > ul > li:nth-child(1) > label > p")
     if deal == "great":
-        cargurus_button_click("css", ".\\_5pN1ma:nth-child(13) li:nth-child(1) .\\_2dnSXG")
+        cargurus_button_click("css", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
+        div._3K15rt > div:nth-child(2) > fieldset:nth-child(12) > ul > li:nth-child(1) > label > p")
 
 # pull out mileage from element
 def cargurus_get_mileage(element):
@@ -299,12 +320,13 @@ def write_to_csv(header="yes", file_name="", payload=None, source="cargurus"):
         if header == "yes":
             writer.writerow(["year", "make/model", "transmission", "mileage", "price", "drive", "fuel",
                              "exterior color", "interior", "vin", "dealership link", "dealership town",
-                             "distance from zip", "accidents", "title problem", "source"])
+                             "distance from zip", "days of cargurus", "accidents({})".format(source),
+                             "title({})".format(source), "below/above mk", "compare to mk", "accidents(carfax)",
+                             "title problem(carfax)", "source"])
         for entry in payload:
             if entry != "":
                 entry.append(source)
                 writer.writerow(entry)
-
 
 def remove_empty_lines(file):
     with open(file) as myFile:
@@ -344,7 +366,7 @@ def main():
                                     end=search['end_year'], mileage=search['mileage'],
                                     deal_quality=search['deal_quality'])
         # populate the carfax history
-        cars = populate_carfax_info(cars)
+        # cars = populate_carfax_info(cars)
         # write to csv file
         write_to_csv(header="yes", payload=cars, file_name=file_name)
         logging.critical("Cars found: {}".format(len(cars)))

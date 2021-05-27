@@ -1,10 +1,10 @@
 add mileage filter-----------------------------------------done
 add yeAR filter--------------------------------------------done
-add days on market
-add days on cargurus
-add accidents from cargurus
-add title from cargurus
-add below/above market
+add days on market-----------------------------------------done
+add days on cargurus---------------------------------------done
+add accidents from cargurus--------------------------------done
+add title from cargurus------------------------------------done
+add below/above market-------------------------------------done
 add url
 pull out trim and add to spreadsaheet
 add engine size from carfax 
