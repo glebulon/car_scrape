@@ -118,16 +118,27 @@ def cargurus_car_details(url, href):
         current_car_info.append(current_car_soup.find_all(class_="_4ipBMn")[0].text)
         # distance from zipcode
         distance_town = current_car_soup.find_all(class_="_3CFFR5")[0].text
-        current_car_info.append(distance_town.split("·")[0].strip())
-        current_car_info.append(distance_town.split("·")[1].strip())
+        try:
+            current_car_info.append(distance_town.split("·")[0].strip())
+        except Exception as e:
+            current_car_info.append("")
+        try:
+            current_car_info.append(distance_town.split("·")[1].strip())
+        except Exception as e:
+            current_car_info.append("")
         # days on cargurus
-        current_car_info.append(current_car_soup.select('#cargurus-listing-search > div:nth-child(1) > div._36TanG > \
-            div._24ffzL > div._5jSLnT > div._2Bszua._5PSqaB > div._5j5D2G > div:nth-child(1) > div._5kdMnf > \
-            div:nth-child(2) > strong')[0].text or "")
+        try:
+            current_car_info.append(current_car_soup.select('#cargurus-listing-search > div:nth-child(1) > div._36TanG > \
+                div._24ffzL > div._5jSLnT > div._2Bszua._5PSqaB > div._5j5D2G > div:nth-child(1) > div._5kdMnf > \
+                div:nth-child(2) > strong')[0].text)
+        except Exception as e:
+            current_car_info.append(current_car_soup.select('#cargurus-listing-search > div:nth-child(1) > \
+            div._36TanG > div._24ffzL > div._5jSLnT > div._2Bszua._5PSqaB > div._5j5D2G > div:nth-child(1) > \
+                div._5kdMnf > div._5XcXHD > strong')[0].text)
         # accidents from cargurus
-        current_car_info.append(current_car_soup.find_all(class_="_5gudF3")[1].text or "")
+        current_car_info.append(current_car_soup.find_all(class_="_5gudF3")[1].text)
         # title issues
-        current_car_info.append(current_car_soup.find_all(class_="_5gudF3")[0].text or "")
+        current_car_info.append(current_car_soup.find_all(class_="_5gudF3")[0].text)
         # price versus market
         # store the element
         price_anal = current_car_soup.select("#cargurus-listing-search > div:nth-child(1) > div._36TanG > \
@@ -135,7 +146,10 @@ def cargurus_car_details(url, href):
         # above or below
         current_car_info.append(price_anal.contents[0].text)
         # by how much
-        current_car_info.append(price_anal.contents[1].strip())
+        try: 
+            current_car_info.append(price_anal.contents[1].strip())
+        except Exception as e:
+            current_car_info.append(str(price_anal.contents[1].strip()))
         print(current_car_info)
         # return data
         return current_car_info
