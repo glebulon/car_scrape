@@ -319,8 +319,11 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
             cargurus_cars.append(x)
         # back to results
         cargurus_button_click('class_name', '_2aBVWp')
-    logging.critical("Number of cars: {}".format(len(cargurus_cars)))
-    return cargurus_cars
+    # remove duplicate entries, not sure why they are there
+    deduped_cars = []
+    deduped_cars = [x for x in cargurus_cars if x not in deduped_cars]
+    logging.critical("Number of cars: {}".format(len(deduped_cars)))
+    return deduped_cars
 
 
 def date_stamp():
