@@ -114,8 +114,8 @@ def cargurus_car_details(url, href):
         # pull out info for each and append
         for e in elements_list:
             current_car_info.append(checkAndGetKey(details, e))
-        # add dealer link
-        current_car_info.append(current_car_soup.find_all(class_="_4ipBMn")[0].text)
+        # add car link
+        current_car_info.append("".join((url + href).split()))
         # distance from zipcode
         distance_town = current_car_soup.find_all(class_="_3CFFR5")[0].text
         try:
@@ -336,13 +336,12 @@ def write_to_csv(header="yes", file_name="", payload=None, source="cargurus"):
         writer = csv.writer(file, dialect='excel')
         if header == "yes":
             writer.writerow(["year", "make/model", "transmission", "mileage", "price", "drive", "fuel",
-                             "exterior color", "interior", "vin", "dealership link", "dealership town",
+                             "exterior color", "interior", "vin", "car link", "dealership town",
                              "distance from zip", "days of cargurus", "accidents({})".format(source),
                              "title({})".format(source), "below/above mk", "compare to mk", "accidents(carfax)",
-                             "title problem(carfax)", "source"])
+                             "title problem(carfax)"])
         for entry in payload:
             if entry != "":
-                entry.append(source)
                 writer.writerow(entry)
 
 def remove_empty_lines(file):
