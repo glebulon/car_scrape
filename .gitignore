@@ -4,3 +4,4 @@ chromedriver.exe
 .vscode/*
 carfax_creds.json
 run.log
+*.pyc
