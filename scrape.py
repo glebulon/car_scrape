@@ -90,8 +90,8 @@ def cargurus_car_details(url, href):
         current_car_html = driver.page_source
         current_car_soup = BeautifulSoup(current_car_html, 'html.parser')
         # data model is follows
-        # [year, make-model, transmission, mileage, price, drive, fuel, exterior color, interior, vin, dealership link,
-        # dealership town, distance from zip, days on cargurus, accidents from cargurus, title from cargurus,
+        # [year, make-model, transmission, mileage, price, drive, fuel, exterior color, interior, vin, moon/sun, leather, navigation, 
+        # car link, dealership town, distance from zip, days on cargurus, accidents from cargurus, title from cargurus,
         # price vs market ]
         current_car_info = []
         year_make_model = current_car_soup.find_all(class_="_2Nz9KW")[0].text
@@ -114,6 +114,16 @@ def cargurus_car_details(url, href):
         # pull out info for each and append
         for e in elements_list:
             current_car_info.append(checkAndGetKey(details, e))
+        
+        major_options = current_car_soup.select('#cargurus-listing-search > div:nth-child(1) > div._36TanG > \
+        div._24ffzL > div._5jSLnT > section:nth-child(4) > dl > dd:nth-child(26)')[0].contents[0].lower()
+        # moon/sun
+        current_car_info.append("yes") if "moonroof" in major_options or "sunroof" in major_options else \
+            current_car_info.append("no")
+        # leather seats
+        current_car_info.append("yes") if "leather" in major_options else current_car_info.append("no")
+        # navigation
+        current_car_info.append("yes") if "navigation" in major_options else current_car_info.append("no")
         # add car link
         current_car_info.append("".join((url + href).split()))
         # distance from zipcode
@@ -336,10 +346,10 @@ def write_to_csv(header="yes", file_name="", payload=None, source="cargurus"):
         writer = csv.writer(file, dialect='excel')
         if header == "yes":
             writer.writerow(["year", "make/model", "transmission", "mileage", "price", "drive", "fuel",
-                             "exterior color", "interior", "vin", "car link", "dealership town",
-                             "distance from zip", "days of cargurus", "accidents({})".format(source),
-                             "title({})".format(source), "below/above mk", "compare to mk", "accidents(carfax)",
-                             "title problem(carfax)"])
+                             "exterior color", "interior", "vin", "moonroof", "leather", "navigation", "car link",
+                             "dealership town", "distance from zip", "days of cargurus",
+                             "accidents({})".format(source), "title({})".format(source), "below/above mk",
+                             "compare to mk", "accidents(carfax)", "title problem(carfax)"])
         for entry in payload:
             if entry != "":
                 writer.writerow(entry)
