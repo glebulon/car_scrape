@@ -146,7 +146,7 @@ def cargurus_car_details(url, href):
         # above or below
         current_car_info.append(price_anal.contents[0].text)
         # by how much
-        try: 
+        try:
             current_car_info.append(price_anal.contents[1].strip())
         except Exception as e:
             current_car_info.append(str(price_anal.contents[1].strip()))
@@ -204,13 +204,13 @@ def cargurus_remove_no_price():
 # select good priced car only
 def cargurus_good_price_only(deal):
     if deal == "good":
-        cargurus_button_click("css", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
-        div._3K15rt > div:nth-child(2) > fieldset:nth-child(12) > ul > li:nth-child(2) > label > p")
-        cargurus_button_click("css", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
-        div._3K15rt > div:nth-child(2) > fieldset:nth-child(12) > ul > li:nth-child(1) > label > p")
+        cargurus_button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 \
+        > div._3K15rt > div:nth-child(2) > fieldset:nth-child(13) > ul > li:nth-child(1) > label > p")
+        cargurus_button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
+        div._3K15rt > div:nth-child(2) > fieldset:nth-child(13) > ul > li:nth-child(2) > label > p")
     if deal == "great":
-        cargurus_button_click("css", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
-        div._3K15rt > div:nth-child(2) > fieldset:nth-child(12) > ul > li:nth-child(1) > label > p")
+        cargurus_button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 \
+        > div._3K15rt > div:nth-child(2) > fieldset:nth-child(13) > ul > li:nth-child(1) > label > p")
 
 # pull out mileage from element
 def cargurus_get_mileage(element):
@@ -380,7 +380,7 @@ def main():
                                     end=search['end_year'], mileage=search['mileage'],
                                     deal_quality=search['deal_quality'])
         # populate the carfax history
-        # cars = populate_carfax_info(cars)
+        cars = populate_carfax_info(cars)
         # write to csv file
         write_to_csv(header="yes", payload=cars, file_name=file_name)
         logging.critical("Cars found: {}".format(len(cars)))
