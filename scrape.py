@@ -8,6 +8,7 @@ import re
 import time
 import uuid
 from datetime import datetime
+import traceback
 
 import pytz
 from bs4 import BeautifulSoup
@@ -16,8 +17,8 @@ from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import Select, WebDriverWait
+
 # constants
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', filename='run.log', encoding='utf-8',
                     level=logging.CRITICAL, datefmt='%Y-%m-%d %H:%M:%S')
@@ -31,6 +32,7 @@ options.add_argument("--disable-gpu")
 options.binary_location = r"C:\Program Files (x86)\Google\Chrome Beta\Application\chrome.exe"
 chrome_driver_binary = r"D:\my documents\car_scrape\chromedriver.exe"
 driver = webdriver.Chrome(chrome_driver_binary, chrome_options=options)
+
 
 def carfax_login():
     with open('carfax_creds.json') as f:
@@ -68,6 +70,7 @@ def carfax_viewer(vin):
     title_problem = "yes" if len(soup.findAll('tr', {'id': "nonDamageBrandedTitleRowTableRow"})) != 0 else "no"
     return([damage, title_problem])
 
+
 def checkAndGetKey(dict, key):
     if key in dict.keys():
         return dict[key]
@@ -75,6 +78,7 @@ def checkAndGetKey(dict, key):
         return ""
 
 # get information about a specific car
+
 def cargurus_car_details(url, href):
     driver.get(url + href)
     timeout = 60
@@ -90,9 +94,9 @@ def cargurus_car_details(url, href):
         current_car_html = driver.page_source
         current_car_soup = BeautifulSoup(current_car_html, 'html.parser')
         # data model is follows
-        # [year, make-model, transmission, mileage, price, drive, fuel, exterior color, interior, vin, moon/sun, leather, navigation, 
-        # car link, dealership town, distance from zip, days on cargurus, accidents from cargurus, title from cargurus,
-        # price vs market ]
+        # [year, make-model, transmission, mileage, price, drive, fuel, exterior color, interior, vin, moon/sun,
+        # leather, navigation, car link, dealer info, dealership town, distance from zip, days on cargurus, accidents from cargurus,
+        # title from cargurus, price vs market ]
         current_car_info = []
         year_make_model = current_car_soup.find_all(class_="_2Nz9KW")[0].text
         # add year
@@ -114,18 +118,39 @@ def cargurus_car_details(url, href):
         # pull out info for each and append
         for e in elements_list:
             current_car_info.append(checkAndGetKey(details, e))
-        
-        major_options = current_car_soup.select('#cargurus-listing-search > div:nth-child(1) > div._36TanG > \
-        div._24ffzL > div._5jSLnT > section:nth-child(4) > dl > dd:nth-child(26)')[0].contents[0].lower()
+
+        # get the major options of the car
+        major_options = current_car_soup.find("dl", {"class": "_249mSX"})
         # moon/sun
-        current_car_info.append("yes") if "moonroof" in major_options or "sunroof" in major_options else \
-            current_car_info.append("no")
+        moon = "no"
+        for i in major_options.contents:
+            if "moonroof" in i.text.lower() or "sunroof" in i.text.lower():
+                moon = "yes"
+        current_car_info.append(moon)
         # leather seats
-        current_car_info.append("yes") if "leather" in major_options else current_car_info.append("no")
+        leather = "no"
+        for i in major_options.contents:
+            if "leather" in i.text.lower():
+                moon = "yes"
+        current_car_info.append(leather)
         # navigation
-        current_car_info.append("yes") if "navigation" in major_options else current_car_info.append("no")
+        navigation = "no"
+        for i in major_options.contents:
+            if "navigation" in i.text.lower():
+                navigation = "yes"
+        current_car_info.append(navigation)
+
         # add car link
         current_car_info.append("".join((url + href).split()))
+        # dealer info
+        dealer_info = current_car_soup.select('#cargurus-listing-search > div:nth-child(1) > div._36TanG > \
+        div._24ffzL > div._5jSLnT > section._2WWLMX._5PSqaB')
+        try:
+            dealer_info = [x.text for x in dealer_info[0].contents]
+            dealer_info = "::".join(dealer_info)
+        except Exception as e:
+            dealer_info = ""
+        current_car_info.append(dealer_info)
         # distance from zipcode
         distance_town = current_car_soup.find_all(class_="_3CFFR5")[0].text
         try:
@@ -168,6 +193,7 @@ def cargurus_car_details(url, href):
         return ""
 
 # load the page and waits for a specific element to be there
+
 def cargurus_load_page(driver):
     timeout = 60
     # wait for the javascript to load
@@ -183,6 +209,7 @@ def cargurus_load_page(driver):
 
 
 # fetches car links and returns car information, wrapper function
+
 def cargurus_get_details(elements, url):
     # find hrefs and get details of all cars
     car_details = []
@@ -192,12 +219,15 @@ def cargurus_get_details(elements, url):
     car_details = [entry for entry in car_details if entry != '']
     return car_details
 
+
 def cargurus_next_page_exists(driver):
     return "page-navigation-next-page" in driver.page_source
+
 
 def cargurus_wait_to_load():
     WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CLASS_NAME, "_3K15rt")))
     time.sleep(3)
+
 
 def cargurus_next_page(first=True):
     if first:
@@ -208,10 +238,12 @@ def cargurus_next_page(first=True):
             div._5K96zi._3QziWR > div.UiqxWZ._2nqerW > div.VXnaDS._55Yy37 > button:nth-child(4)')
 
 # unclick the checkbox that shows cars with no price
+
 def cargurus_remove_no_price():
     cargurus_button_click("css", "div > .XHYfqj > .\\_2dnSXG")
 
 # select good priced car only
+
 def cargurus_good_price_only(deal):
     if deal == "good":
         cargurus_button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 \
@@ -223,6 +255,7 @@ def cargurus_good_price_only(deal):
         > div._3K15rt > div:nth-child(2) > fieldset:nth-child(13) > ul > li:nth-child(1) > label > p")
 
 # pull out mileage from element
+
 def cargurus_get_mileage(element):
     mileage = 0
     for i in element.find_all('p'):
@@ -246,6 +279,7 @@ def cargurus_button_click(type, identifier):
     cargurus_wait_to_load()
 
 # click the detials tab, just in case the summary shows up
+
 def cargurus_details_tab():
     try:
         cargurus_button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div._36TanG > div._24ffzL > \
@@ -259,6 +293,7 @@ def cargurus_details_tab():
         pass
 
 # select the year range
+
 def cargurus_year_range(start, end):
     driver.find_element_by_name("selectedStartYear").click()
     Select(driver.find_element_by_name("selectedStartYear")).select_by_visible_text(str(start))
@@ -268,6 +303,7 @@ def cargurus_year_range(start, end):
     driver.find_element_by_name("selectedEndYear").click()
     driver.find_element_by_xpath("(//button[@type='submit'])[2]").click()
 # this is the main function, the entry point to the other ones for cargurus
+
 def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0, deal_quality="",
                   start="", end="", mileage=""):
     # look up the code for the model of car
@@ -284,8 +320,11 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
     # wait to load
     cargurus_wait_to_load()
     # select years if provided
-    if start or end:
-        cargurus_year_range(start, end)
+    try:
+        if start or end:
+            cargurus_year_range(start, end)
+    except Exception as e:
+        print(traceback.format_exc())
     # select deal if option passed
     if deal_quality:
         cargurus_good_price_only(deal_quality)
@@ -347,12 +386,13 @@ def write_to_csv(header="yes", file_name="", payload=None, source="cargurus"):
         if header == "yes":
             writer.writerow(["year", "make/model", "transmission", "mileage", "price", "drive", "fuel",
                              "exterior color", "interior", "vin", "moonroof", "leather", "navigation", "car link",
-                             "dealership town", "distance from zip", "days of cargurus",
+                             "dealer info", "dealership town", "distance from zip", "days of cargurus",
                              "accidents({})".format(source), "title({})".format(source), "below/above mk",
                              "compare to mk", "accidents(carfax)", "title problem(carfax)"])
         for entry in payload:
             if entry != "":
                 writer.writerow(entry)
+
 
 def remove_empty_lines(file):
     with open(file) as myFile:
@@ -370,9 +410,11 @@ def populate_carfax_info(cars):
     return cars
 
 # read in search
+
 def search_settings_read():
     with open('settings/searches.json') as f:
         return(json.load(f))
+
 
 def gen_unique():
     return str(uuid.uuid4()).split('-')[0]
