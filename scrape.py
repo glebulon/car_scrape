@@ -337,7 +337,7 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
     elements = cargurus_load_page(driver)
     # filter out all cars that are sponsored and are above mileage threshold
     for element in elements:
-        if "Sponsored" in element.text:
+        if "Sponsored" in element.text or "Authorized" in element.text or "delivery" in element.text.lower():
             elements.remove(element)
         elif mileage and cargurus_get_mileage(element) > mileage:
             elements.remove(element)
