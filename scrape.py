@@ -5,10 +5,11 @@ import json
 import logging
 import os
 import re
+import sys
 import time
+import traceback
 import uuid
 from datetime import datetime
-import traceback
 
 import pytz
 from bs4 import BeautifulSoup
@@ -95,8 +96,8 @@ def cargurus_car_details(url, href):
         current_car_soup = BeautifulSoup(current_car_html, 'html.parser')
         # data model is follows
         # [year, make-model, transmission, mileage, price, drive, fuel, exterior color, interior, vin, moon/sun,
-        # leather, navigation, car link, dealer info, dealership town, distance from zip, days on cargurus, accidents from cargurus,
-        # title from cargurus, price vs market ]
+        # leather, navigation, car link, dealer info, dealership town, distance from zip, days on cargurus, accidents,
+        # from cargurus, title from cargurus, price vs market ]
         current_car_info = []
         year_make_model = current_car_soup.find_all(class_="_2Nz9KW")[0].text
         # add year
@@ -189,7 +190,10 @@ def cargurus_car_details(url, href):
         # return data
         return current_car_info
     except Exception as e:
+        print("url: {}".format(url + href))
         print(e)
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        traceback.print_exception(exc_type, exc_value, exc_tb)
         return ""
 
 # load the page and waits for a specific element to be there
@@ -238,7 +242,6 @@ def cargurus_next_page(first=True):
             div._5K96zi._3QziWR > div.UiqxWZ._2nqerW > div.VXnaDS._55Yy37 > button:nth-child(4)')
 
 # unclick the checkbox that shows cars with no price
-
 def cargurus_remove_no_price():
     cargurus_button_click("css", "div > .XHYfqj > .\\_2dnSXG")
 
@@ -302,8 +305,9 @@ def cargurus_year_range(start, end):
     Select(driver.find_element_by_name("selectedEndYear")).select_by_visible_text(str(end))
     driver.find_element_by_name("selectedEndYear").click()
     driver.find_element_by_xpath("(//button[@type='submit'])[2]").click()
-# this is the main function, the entry point to the other ones for cargurus
 
+
+# this is the main function, the entry point to the other ones for cargurus
 def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0, deal_quality="",
                   start="", end="", mileage=""):
     # look up the code for the model of car
@@ -339,21 +343,12 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
     for element in elements:
         if "Sponsored" in element.text or "Authorized" in element.text or "delivery" in element.text.lower():
             elements.remove(element)
-        elif mileage and cargurus_get_mileage(element) > mileage:
+        elif mileage and (cargurus_get_mileage(element) > mileage):
             elements.remove(element)
-    # find hrefs and get details of all cars
-    new_details = cargurus_get_details(elements, url)
-    # append details to our master list
-    for x in new_details:
-        cargurus_cars.append(x)
+    # create a list of all cars from every page, then get details from all of them
+    all_elements = elements
 
-    # if number of listings loaded is less than desired and there are more pages then next page will be loaded
-    # this will not be granular, if you ask for 20 but there is 15 on the page
-    # you'll load page 2, and can get 30 listings
-
-    # go back before to search results
-    cargurus_button_click('class_name', '_2aBVWp')
-    while len(cargurus_cars) < number_of_listings and number_of_listings != 0 and cargurus_next_page_exists(driver):
+    while len(all_elements) < number_of_listings and number_of_listings != 0 and cargurus_next_page_exists(driver):
         # go to next page, different locators if page 1 or not
         if page == 1:
             cargurus_next_page(first=True)
@@ -362,15 +357,20 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
         page += 1
         logging.critical("Fetching more cars")
         elements = cargurus_load_page(driver)
-        # get new details and add all elements of the list into master list
-        new_details = cargurus_get_details(elements, url)
-        for x in new_details:
-            cargurus_cars.append(x)
-        # back to results
-        cargurus_button_click('class_name', '_2aBVWp')
+        for element in elements:
+            all_elements.append(element)
+
+    # find hrefs and get details of all cars
+    new_details = cargurus_get_details(all_elements, url)
+    # append details to our master list
+    for x in new_details:
+        cargurus_cars.append(x)
+
     # remove duplicate entries, not sure why they are there
     deduped_cars = []
-    deduped_cars = [x for x in cargurus_cars if x not in deduped_cars]
+    for item in cargurus_cars:
+        if item not in deduped_cars:
+            deduped_cars.append(item)
     logging.critical("Number of cars: {}".format(len(deduped_cars)))
     return deduped_cars
 
@@ -434,7 +434,7 @@ def main():
                                     end=search['end_year'], mileage=search['mileage'],
                                     deal_quality=search['deal_quality'])
         # populate the carfax history
-        cars = populate_carfax_info(cars)
+        # cars = populate_carfax_info(cars)
         # write to csv file
         write_to_csv(header="yes", payload=cars, file_name=file_name)
         logging.critical("Cars found: {}".format(len(cars)))
