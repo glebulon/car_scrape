@@ -177,15 +177,24 @@ def cargurus_car_details(url, href):
         current_car_info.append(current_car_soup.find_all(class_="_5gudF3")[0].text)
         # price versus market
         # store the element
-        price_anal = current_car_soup.select("#cargurus-listing-search > div:nth-child(1) > div._36TanG > \
-        div._24ffzL > div._3Wnbei > section > div > div > section._2Xfg8g")[0]
-        # above or below
-        current_car_info.append(price_anal.contents[0].text)
-        # by how much
         try:
+            price_anal = current_car_soup.select("#cargurus-listing-search > div:nth-child(1) > div._36TanG > \
+            div._24ffzL > div._3Wnbei > section > div > div > section._2Xfg8g")[0]
+        except Exception as e:
+            print("url: {}".format(url + href))
+            print(e)
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            traceback.print_exception(exc_type, exc_value, exc_tb)
+        try:
+            # by how much
+            current_car_info.append(price_anal.contents[0].text)
+            # above or below
             current_car_info.append(price_anal.contents[1].strip())
         except Exception as e:
-            current_car_info.append(str(price_anal.contents[1].strip()))
+            try:
+                current_car_info.append(str(price_anal.contents[1].strip()))
+            except Exception as e:
+                pass
         print(current_car_info)
         # return data
         return current_car_info
@@ -307,6 +316,34 @@ def cargurus_year_range(start, end):
     driver.find_element_by_xpath("(//button[@type='submit'])[2]").click()
 
 
+# remove anything that is sponsored, authorized or delivers
+def remove_auth_del_spon(raw_elements, mileage):
+    # for element in raw_elements:
+    #     if "sponsored" in element.text.lower():
+    #         raw_elements.remove(element)
+    # for element in raw_elements:
+    #     if "authorized" in element.text.lower():
+    #         raw_elements.remove(element)
+    # for element in raw_elements:
+    #     if "delivery" in element.text.lower():
+    #         raw_elements.remove(element)
+    # for element in raw_elements:
+    #     if element.text.lower() == '':
+    #         raw_elements.remove(element)
+    # for element in raw_elements:
+    #     if (mileage and (cargurus_get_mileage(element) > mileage)) or (cargurus_get_mileage(element) != 0):
+    #         raw_elements.remove(element)
+    elements = [x for x in raw_elements if (
+                not re.search('Sponsored', x.text))
+                and (not re.search('Authorized.*Dealer', x.text))
+                and (x.select('#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > \
+                    div._5K96zi._3QziWR > div._3LnDeD > div:nth-child(6) > div > a > div._4yP575._2PDkfp > div > \
+                    div._37Fr4g > div > svg') == [])
+                and (x.text.lower() != '') and (cargurus_get_mileage(x) != 0)
+                and (mileage and (cargurus_get_mileage(x) < mileage))
+                ]
+    return elements
+
 # this is the main function, the entry point to the other ones for cargurus
 def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_listings=0, deal_quality="",
                   start="", end="", mileage=""):
@@ -338,18 +375,13 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
     cargurus_cars = []
     page = 1
     # get all cars on the page
-    elements = cargurus_load_page(driver)
+    raw_elements = cargurus_load_page(driver)
     # filter out all cars that are sponsored and are above mileage threshold
-    for element in elements:
-        el = element.text.lower()
-        if "sponsored" in el or "authorized" in el or "delivery" in el or el == '':
-            elements.remove(element)
-        elif mileage and (cargurus_get_mileage(element) > mileage):
-            elements.remove(element)
+    elements = remove_auth_del_spon(raw_elements, mileage)
     # create a list of all cars from every page, then get details from all of them
     all_elements = elements
 
-    while len(all_elements) < number_of_listings and number_of_listings != 0 and cargurus_next_page_exists(driver):
+    while (len(all_elements) < number_of_listings) and (number_of_listings != 0) and cargurus_next_page_exists(driver):
         # go to next page, different locators if page 1 or not
         if page == 1:
             cargurus_next_page(first=True)
@@ -357,7 +389,8 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
             cargurus_next_page(first=False)
         page += 1
         logging.critical("Fetching more cars")
-        elements = cargurus_load_page(driver)
+        raw_elements = cargurus_load_page(driver)
+        elements = remove_auth_del_spon(raw_elements, mileage)
         for element in elements:
             all_elements.append(element)
 
