@@ -194,7 +194,8 @@ def cargurus_car_details(url, href):
             try:
                 current_car_info.append(str(price_anal.contents[1].strip()))
             except Exception as e:
-                pass
+                current_car_info.append("")
+                current_car_info.append("")
         print(current_car_info)
         # return data
         return current_car_info
