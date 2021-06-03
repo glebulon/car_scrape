@@ -255,20 +255,26 @@ def cargurus_next_page(first=True):
 def cargurus_remove_no_price():
     cargurus_button_click("css", "div > .XHYfqj > .\\_2dnSXG")
 
-# select good priced car only
+# press the clear button for CPO/used/new
+def cargurus_remove_cpo():
+    cargurus_button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
+                                       div._3K15rt > div:nth-child(2) > fieldset:nth-child(13) > legend > button")
 
+
+
+# select good priced car only
 def cargurus_good_price_only(deal):
-    if deal == "good":
-        cargurus_button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 \
-        > div._3K15rt > div:nth-child(2) > fieldset:nth-child(13) > ul > li:nth-child(1) > label > p")
-        cargurus_button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
-        div._3K15rt > div:nth-child(2) > fieldset:nth-child(13) > ul > li:nth-child(2) > label > p")
-    if deal == "great":
-        cargurus_button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 \
-        > div._3K15rt > div:nth-child(2) > fieldset:nth-child(13) > ul > li:nth-child(1) > label > p")
+    for child in [12, 13]:
+        if deal == "good":
+            cargurus_button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 \
+            > div._3K15rt > div:nth-child(2) > fieldset:nth-child({}) > ul > li:nth-child(1) > label > p".format(child))
+            cargurus_button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
+            div._3K15rt > div:nth-child(2) > fieldset:nth-child({}) > ul > li:nth-child(2) > label > p".format(child))
+        if deal == "great":
+            cargurus_button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 \
+            > div._3K15rt > div:nth-child(2) > fieldset:nth-child({}) > ul > li:nth-child(1) > label > p".format(child))
 
 # pull out mileage from element
-
 def cargurus_get_mileage(element):
     mileage = 0
     for i in element.find_all('p'):
@@ -317,23 +323,10 @@ def cargurus_year_range(start, end):
     driver.find_element_by_xpath("(//button[@type='submit'])[2]").click()
 
 
-# remove anything that is sponsored, authorized or delivers
+# remove anything that is sponsored, authorized or delivers or above mileage
 def remove_auth_del_spon(raw_elements, mileage):
-    # for element in raw_elements:
-    #     if "sponsored" in element.text.lower():
-    #         raw_elements.remove(element)
-    # for element in raw_elements:
-    #     if "authorized" in element.text.lower():
-    #         raw_elements.remove(element)
-    # for element in raw_elements:
-    #     if "delivery" in element.text.lower():
-    #         raw_elements.remove(element)
-    # for element in raw_elements:
-    #     if element.text.lower() == '':
-    #         raw_elements.remove(element)
-    # for element in raw_elements:
-    #     if (mileage and (cargurus_get_mileage(element) > mileage)) or (cargurus_get_mileage(element) != 0):
-    #         raw_elements.remove(element)
+    # move to a new list all elements that do NOT contain:
+    # Sponsored, Authorized.*Dealer, are not not empty and if mileage is provided filter on mileage
     elements = [x for x in raw_elements if (
                 not re.search('Sponsored', x.text))
                 and (not re.search('Authorized.*Dealer', x.text))
@@ -341,7 +334,7 @@ def remove_auth_del_spon(raw_elements, mileage):
                     div._5K96zi._3QziWR > div._3LnDeD > div:nth-child(6) > div > a > div._4yP575._2PDkfp > div > \
                     div._37Fr4g > div > svg') == [])
                 and (x.text.lower() != '') and (cargurus_get_mileage(x) != 0)
-                and (mileage and (cargurus_get_mileage(x) < mileage))
+                and ((not mileage) or (cargurus_get_mileage(x) < mileage))
                 ]
     return elements
 
@@ -372,6 +365,8 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
         cargurus_good_price_only(deal_quality)
     # uncheck cars with no price, don't want those
     cargurus_remove_no_price()
+    # remove CPO only cars
+    cargurus_remove_cpo()
     # create a list of cars
     cargurus_cars = []
     page = 1
@@ -476,6 +471,7 @@ def main():
         logging.critical("End: " + file_name)
     # close the window
     driver.close()
+    print("All done, close this window")
 if __name__ == "__main__":
     # execute only if run as a script
     main()
