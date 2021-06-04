@@ -10,9 +10,10 @@ add options(leather, sunroof, navi) from cargurus----------done
 double check filtering deal types--------------------------done
 remove authorized dealers from search----------------------done
 remove places that offer shipping--------------------------done
+check filtering of delivered vehicles----------------------seems to work
+add engine size from carfax--------------------------------done
 
 pull out trim and add to spreadsaheet
-add engine size from carfax 
 remove title problems from carfax 
 pick out color, if not found use black
 try to pick out trim(figure out how to do that)

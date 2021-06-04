@@ -62,6 +62,12 @@ def carfax_viewer(vin):
     soup = BeautifulSoup(driver.page_source, "lxml")
     # get the columns we need
     sources = soup.find_all(class_="source-line")
+    fuel = soup.select('#headerFuel')[0].contents[0].strip() if soup.select('#headerFuel')[0].contents[0].strip() \
+        else ''
+    engine = soup.select('#headerEngineInfo')[0].contents[0].strip() if soup.select('#headerFuel')[0].contents[0].\
+        strip() else ''
+    drive = soup.select('#headerDriveline')[0].contents[0].strip() if soup.select('#headerDriveline')[0].contents[0].\
+        strip() else ''
     # find all occurences of damage
     damage = 0
     for i in sources:
@@ -69,7 +75,7 @@ def carfax_viewer(vin):
             damage += 1
     # find title problems
     title_problem = "yes" if len(soup.findAll('tr', {'id': "nonDamageBrandedTitleRowTableRow"})) != 0 else "no"
-    return([damage, title_problem])
+    return([damage, title_problem, fuel, engine, drive])
 
 
 def checkAndGetKey(dict, key):
@@ -409,19 +415,85 @@ def date_stamp():
     EST = pytz.timezone('America/New_York')
     return(time.strftime('%Y-%m-%d--%I-%M-%p'))
 
+# put all info in the correct order
+def format_entry(entry):
+    car = []
+    # vin
+    car.append(entry[9])
+    # year
+    car.append(entry[0])
+    # make/model
+    car.append(entry[1])
+    # mileage
+    car.append(entry[3])
+    # exterior color
+    car.append(entry[7])
+    # transmission
+    car.append(entry[2])
+    # drive
+    car.append(entry[26])
+    # engine
+    car.append(entry[25])
+    # leather
+    car.append(entry[11])
+    # moonroof
+    car.append(entry[10])
+    # navigation
+    car.append(entry[12])
+    # accident(carfax)
+    car.append(entry[22])
+    # accident(cargurus)
+    car.append(entry[18])
+    # dealer info
+    car.append(entry[14])
+    # price
+    car.append(entry[4])
+    # offer
+    car.append("")
+    # profit
+    car.append("")
+    # name
+    car.append("")
+    # phone
+    car.append("")
+    # notes
+    car.append("")
+    # car link
+    car.append(entry[13])
+    # dealership town
+    car.append(entry[15])
+    # disatnce from zip
+    car.append(entry[16])
+    # below/above mk
+    car.append(entry[20])
+    # fuel
+    car.append(entry[24])
+    # compare to mk
+    car.append(entry[21])
+    # interior
+    car.append(entry[8])
+    # days on cargurus
+    car.append(entry[17])
+    # title cargurus
+    car.append(entry[19])
+    # title carfax
+    car.append(entry[23])
+    return car
 
 def write_to_csv(header="yes", file_name="", payload=None, source="cargurus"):
     with open(r'reports/' + file_name + '.csv', 'a+', newline='') as file:
         writer = csv.writer(file, dialect='excel')
         if header == "yes":
-            writer.writerow(["year", "make/model", "transmission", "mileage", "price", "drive", "fuel",
-                             "exterior color", "interior", "vin", "moonroof", "leather", "navigation", "car link",
-                             "dealer info", "dealership town", "distance from zip", "days of cargurus",
-                             "accidents({})".format(source), "title({})".format(source), "below/above mk",
-                             "compare to mk", "accidents(carfax)", "title problem(carfax)"])
+            writer.writerow(["vin", "year", "make/model", "mileage", "exterior color", "transmission", "drive",
+                             "Engine", "leather", "moonroof", "navigation", "accidents(carfax)",
+                             "accidents({})".format(source), "dealer info", "price", "offer", "profit", "name",
+                             "phone", "notes", "car link", "dealership town", "distance from zip", "below/above mk",
+                             "fuel", "compare to mk", "interior", "days on ({})".format(source),
+                             "title({})".format(source), "title problem(carfax)"
+                            ])
         for entry in payload:
             if entry != "":
-                writer.writerow(entry)
+                writer.writerow(format_entry(entry))
 
 
 def remove_empty_lines(file):
@@ -437,6 +509,9 @@ def populate_carfax_info(cars):
         results = carfax_viewer(car[9])
         car.append(results[0])
         car.append(results[1])
+        car.append(results[2])
+        car.append(results[3])
+        car.append(results[4])
     return cars
 
 # read in search
@@ -464,7 +539,7 @@ def main():
                                     end=search['end_year'], mileage=search['mileage'],
                                     deal_quality=search['deal_quality'])
         # populate the carfax history
-        # cars = populate_carfax_info(cars)
+        cars = populate_carfax_info(cars)
         # write to csv file
         write_to_csv(header="yes", payload=cars, file_name=file_name)
         logging.critical("Cars found: {}".format(len(cars)))
