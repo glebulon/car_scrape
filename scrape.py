@@ -77,7 +77,8 @@ def carfax_viewer(vin):
     title_problem = "yes" if len(soup.findAll('tr', {'id': "nonDamageBrandedTitleRowTableRow"})) != 0 else "no"
     return([damage, title_problem, fuel, engine, drive])
 
-
+def carfax_mock(vin):
+    return([12, "no title issue carfax", "GAS", "V16", "6WD"])
 def checkAndGetKey(dict, key):
     if key in dict.keys():
         return dict[key]
@@ -101,7 +102,7 @@ def cargurus_car_details(url, href):
         current_car_html = driver.page_source
         current_car_soup = BeautifulSoup(current_car_html, 'html.parser')
         # data model is follows
-        # [year, make-model, transmission, mileage, price, drive, fuel, exterior color, interior, vin, moon/sun,
+        # [year, make-model, transmission, mileage, price, fuel, exterior color, interior, vin, moon/sun,
         # leather, navigation, car link, dealer info, dealership town, distance from zip, days on cargurus, accidents,
         # from cargurus, title from cargurus, price vs market ]
         current_car_info = []
@@ -120,7 +121,7 @@ def cargurus_car_details(url, href):
             details[i.text.strip(':')] = values[element].text
             element += 1
         # list of info that we need
-        elements_list = ["Transmission", "Mileage", "Dealer's Price", "Drivetrain", "Fuel Type", "Exterior Color",
+        elements_list = ["Transmission", "Mileage", "Dealer's Price", "Fuel Type", "Exterior Color",
                          "Interior Color", "VIN"]
         # pull out info for each and append
         for e in elements_list:
@@ -138,7 +139,7 @@ def cargurus_car_details(url, href):
         leather = "no"
         for i in major_options.contents:
             if "leather" in i.text.lower():
-                moon = "yes"
+                leather = "yes"
         current_car_info.append(leather)
         # navigation
         navigation = "no"
@@ -146,7 +147,6 @@ def cargurus_car_details(url, href):
             if "navigation" in i.text.lower():
                 navigation = "yes"
         current_car_info.append(navigation)
-
         # add car link
         current_car_info.append("".join((url + href).split()))
         # dealer info
@@ -158,6 +158,18 @@ def cargurus_car_details(url, href):
         except Exception as e:
             dealer_info = ""
         current_car_info.append(dealer_info)
+        # dealer phone number
+        try:
+            phone = current_car_soup.find("div", {"class": "_3fXy3w"}).contents[0]
+        except Exception as e:
+            phone = ""
+        current_car_info.append(phone)
+        # dealer name
+        try:
+            name = current_car_soup.find("h2", {"class": "_5PEvwP"}).contents[0].contents[0]
+        except Exception as e:
+            name = ""
+        current_car_info.append(name)
         # distance from zipcode
         distance_town = current_car_soup.find_all(class_="_3CFFR5")[0].text
         try:
@@ -267,7 +279,6 @@ def cargurus_remove_cpo():
                                        div._3K15rt > div:nth-child(2) > fieldset:nth-child(13) > legend > button")
 
 
-
 # select good priced car only
 def cargurus_good_price_only(deal):
     for child in [12, 13]:
@@ -317,8 +328,11 @@ def cargurus_details_tab():
     except Exception as e:
         pass
 
-# select the year range
+def cargurus_hide_delivery():
+    cargurus_button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
+    div._3K15rt > div:nth-child(2) > fieldset:nth-child(5) > label > p')
 
+# select the year range
 def cargurus_year_range(start, end):
     driver.find_element_by_name("selectedStartYear").click()
     Select(driver.find_element_by_name("selectedStartYear")).select_by_visible_text(str(start))
@@ -373,6 +387,8 @@ def cargurus_cars(model="camry", year="", zip="02062", distance="3", number_of_l
     cargurus_remove_no_price()
     # remove CPO only cars
     cargurus_remove_cpo()
+    # remove delivery cars
+    cargurus_hide_delivery()
     # create a list of cars
     cargurus_cars = []
     page = 1
@@ -419,7 +435,7 @@ def date_stamp():
 def format_entry(entry):
     car = []
     # vin
-    car.append(entry[9])
+    car.append(entry[8])
     # year
     car.append(entry[0])
     # make/model
@@ -427,25 +443,25 @@ def format_entry(entry):
     # mileage
     car.append(entry[3])
     # exterior color
-    car.append(entry[7])
+    car.append(entry[6])
     # transmission
     car.append(entry[2])
     # drive
-    car.append(entry[26])
+    car.append(entry[27])
     # engine
-    car.append(entry[25])
+    car.append(entry[26])
     # leather
-    car.append(entry[11])
-    # moonroof
     car.append(entry[10])
+    # moonroof
+    car.append(entry[9])
     # navigation
-    car.append(entry[12])
+    car.append(entry[11])
     # accident(carfax)
-    car.append(entry[22])
+    car.append(entry[23])
     # accident(cargurus)
-    car.append(entry[18])
+    car.append(entry[19])
     # dealer info
-    car.append(entry[14])
+    car.append(entry[13])
     # price
     car.append(entry[4])
     # offer
@@ -453,31 +469,31 @@ def format_entry(entry):
     # profit
     car.append("")
     # name
-    car.append("")
+    car.append(entry[15])
     # phone
-    car.append("")
+    car.append(entry[14])
     # notes
     car.append("")
     # car link
-    car.append(entry[13])
+    car.append(entry[12])
     # dealership town
-    car.append(entry[15])
-    # disatnce from zip
     car.append(entry[16])
-    # below/above mk
-    car.append(entry[20])
-    # fuel
-    car.append(entry[24])
-    # compare to mk
-    car.append(entry[21])
-    # interior
-    car.append(entry[8])
-    # days on cargurus
+    # disatnce from zip
     car.append(entry[17])
+    # below/above mk
+    car.append(entry[21])
+    # fuel
+    car.append(entry[25])
+    # compare to mk
+    car.append(entry[22])
+    # interior
+    car.append(entry[7])
+    # days on cargurus
+    car.append(entry[18])
     # title cargurus
     car.append(entry[19])
     # title carfax
-    car.append(entry[23])
+    car.append(entry[24])
     return car
 
 def write_to_csv(header="yes", file_name="", payload=None, source="cargurus"):
@@ -490,7 +506,8 @@ def write_to_csv(header="yes", file_name="", payload=None, source="cargurus"):
                              "phone", "notes", "car link", "dealership town", "distance from zip", "below/above mk",
                              "fuel", "compare to mk", "interior", "days on ({})".format(source),
                              "title({})".format(source), "title problem(carfax)"
-                            ])
+                             ]
+                            )
         for entry in payload:
             if entry != "":
                 writer.writerow(format_entry(entry))
@@ -506,7 +523,8 @@ def remove_empty_lines(file):
 def populate_carfax_info(cars):
     carfax_login()
     for car in cars:
-        results = carfax_viewer(car[9])
+        # results = carfax_viewer(car[9])
+        results = carfax_mock(car[9])
         car.append(results[0])
         car.append(results[1])
         car.append(results[2])
