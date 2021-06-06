@@ -156,30 +156,27 @@ def cargurus_car_details(url, href):
             dealer_info = [x.text for x in dealer_info[0].contents]
             dealer_info = "::".join(dealer_info)
         except Exception as e:
-            dealer_info = ""
+            dealer_info = "-"
         current_car_info.append(dealer_info)
         # dealer phone number
         try:
             phone = current_car_soup.find("div", {"class": "_3fXy3w"}).contents[0]
         except Exception as e:
-            phone = ""
+            phone = "-"
         current_car_info.append(phone)
-        # dealer name
-        try:
-            name = current_car_soup.find("h2", {"class": "_5PEvwP"}).contents[0].contents[0]
-        except Exception as e:
-            name = ""
+        # leaving blank, vic wants the manager's name
+        name = "-"
         current_car_info.append(name)
         # distance from zipcode
         distance_town = current_car_soup.find_all(class_="_3CFFR5")[0].text
         try:
             current_car_info.append(distance_town.split("·")[0].strip())
         except Exception as e:
-            current_car_info.append("")
+            current_car_info.append("-")
         try:
             current_car_info.append(distance_town.split("·")[1].strip())
         except Exception as e:
-            current_car_info.append("")
+            current_car_info.append("-")
         # days on cargurus
         try:
             current_car_info.append(current_car_soup.select('#cargurus-listing-search > div:nth-child(1) > div._36TanG > \
@@ -212,8 +209,9 @@ def cargurus_car_details(url, href):
             try:
                 current_car_info.append(str(price_anal.contents[1].strip()))
             except Exception as e:
-                current_car_info.append("")
-                current_car_info.append("")
+                # append 2 spots
+                current_car_info.append("-")
+                current_car_info.append("-")
         print(current_car_info)
         # return data
         return current_car_info
@@ -465,15 +463,15 @@ def format_entry(entry):
     # price
     car.append(entry[4])
     # offer
-    car.append("")
+    car.append("-")
     # profit
-    car.append("")
+    car.append("-")
     # name
     car.append(entry[15])
     # phone
     car.append(entry[14])
     # notes
-    car.append("")
+    car.append("-")
     # car link
     car.append(entry[12])
     # dealership town
