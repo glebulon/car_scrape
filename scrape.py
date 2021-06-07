@@ -521,8 +521,8 @@ def remove_empty_lines(file):
 def populate_carfax_info(cars):
     carfax_login()
     for car in cars:
-        # results = carfax_viewer(car[9])
-        results = carfax_mock(car[9])
+        results = carfax_viewer(car[8])
+        # results = carfax_mock(car[9])
         car.append(results[0])
         car.append(results[1])
         car.append(results[2])
