@@ -275,6 +275,7 @@ def cargurus_remove_no_price():
 def cargurus_remove_cpo():
     cargurus_button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
                                        div._3K15rt > div:nth-child(2) > fieldset:nth-child(13) > legend > button")
+    cargurus_button_click("css", ".mT6hMz")
 
 
 # select good priced car only
