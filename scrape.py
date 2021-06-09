@@ -1,6 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-import csv
 import json
 import logging
 import os
@@ -8,7 +7,6 @@ import re
 import sys
 import time
 import traceback
-import uuid
 from datetime import datetime
 
 import pytz
@@ -19,6 +17,9 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
+# my own functions
+import modules.misc as misc
+import modules.csv as csv
 
 # constants
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', filename='run.log', encoding='utf-8',
@@ -26,7 +27,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', filename='
 user_agent = r"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) \
     Chrome/68.0.3440.84 Safari/537.36"
 options = webdriver.ChromeOptions()
-options.headless = False
+options.headless = True
 options.add_argument("--window-size=1920,1080")
 options.add_argument(user_agent)
 options.add_argument("--disable-gpu")
@@ -430,94 +431,6 @@ def date_stamp():
     EST = pytz.timezone('America/New_York')
     return(time.strftime('%Y-%m-%d--%I-%M-%p'))
 
-# put all info in the correct order
-def format_entry(entry):
-    car = []
-    # vin
-    car.append(entry[8])
-    # year
-    car.append(entry[0])
-    # make/model
-    car.append(entry[1])
-    # mileage
-    car.append(entry[3])
-    # exterior color
-    car.append(entry[6])
-    # transmission
-    car.append(entry[2])
-    # drive
-    car.append(entry[27])
-    # engine
-    car.append(entry[26])
-    # leather
-    car.append(entry[10])
-    # moonroof
-    car.append(entry[9])
-    # navigation
-    car.append(entry[11])
-    # accident(carfax)
-    car.append(entry[23])
-    # accident(cargurus)
-    car.append(entry[19])
-    # dealer info
-    car.append(entry[13])
-    # price
-    car.append(entry[4])
-    # offer
-    car.append("-")
-    # profit
-    car.append("-")
-    # name
-    car.append(entry[15])
-    # phone
-    car.append(entry[14])
-    # notes
-    car.append("-")
-    # car link
-    car.append(entry[12])
-    # dealership town
-    car.append(entry[16])
-    # disatnce from zip
-    car.append(entry[17])
-    # below/above mk
-    car.append(entry[21])
-    # fuel
-    car.append(entry[25])
-    # compare to mk
-    car.append(entry[22])
-    # interior
-    car.append(entry[7])
-    # days on cargurus
-    car.append(entry[18])
-    # title cargurus
-    car.append(entry[19])
-    # title carfax
-    car.append(entry[24])
-    return car
-
-def write_to_csv(header="yes", file_name="", payload=None, source="cargurus"):
-    with open(r'reports/' + file_name + '.csv', 'a+', newline='') as file:
-        writer = csv.writer(file, dialect='excel')
-        if header == "yes":
-            writer.writerow(["vin", "year", "make/model", "mileage", "exterior color", "transmission", "drive",
-                             "Engine", "leather", "moonroof", "navigation", "accidents(carfax)",
-                             "accidents({})".format(source), "dealer info", "price", "offer", "profit", "name",
-                             "phone", "notes", "car link", "dealership town", "distance from zip", "below/above mk",
-                             "fuel", "compare to mk", "interior", "days on ({})".format(source),
-                             "title({})".format(source), "title problem(carfax)"
-                             ]
-                            )
-        for entry in payload:
-            if entry != "":
-                writer.writerow(format_entry(entry))
-
-
-def remove_empty_lines(file):
-    with open(file) as myFile:
-        lines = myFile.readlines()
-    with open(file, 'w', newline="") as myFile:
-        myFile.writelines([item for item in lines if item != ''])
-
 
 def populate_carfax_info(cars):
     carfax_login()
@@ -538,15 +451,13 @@ def search_settings_read():
         return(json.load(f))
 
 
-def gen_unique():
-    return str(uuid.uuid4()).split('-')[0]
-
 def main():
     # get the car listings
     searches = search_settings_read()
     # itterate over all entries and run a full search for each
     for search in searches:
-        file_name = date_stamp() if not search['model'] else date_stamp() + '-' + search['model'] + '-' + gen_unique()
+        file_name = date_stamp() if not search['model'] else date_stamp() + '-' + search['model'] + '-' +\
+            misc.gen_unique()
         logging.critical("Start: " + file_name)
         logging.critical(search)
         # run search
@@ -558,7 +469,7 @@ def main():
         # populate the carfax history
         cars = populate_carfax_info(cars)
         # write to csv file
-        write_to_csv(header="yes", payload=cars, file_name=file_name)
+        csv.write_to_csv(header="yes", payload=cars, file_name=file_name)
         logging.critical("Cars found: {}".format(len(cars)))
         logging.critical("End: " + file_name)
     # close the window
