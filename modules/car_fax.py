@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+import sys
+import time
+import traceback
 import logging
 import json
 import re
@@ -59,9 +62,7 @@ def carfax_login(driver):
         pass
     WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, "account_menu_item-link")))
 
-def populate_carfax_info(cars, driver=''):
-    if not driver:
-        driver = const.webdriver.Chrome(const.chrome_driver_binary, chrome_options=const.options)
+def populate_carfax_info(cars, driver):
     carfax_login(driver)
     for car in cars:
         results = carfax_viewer(car[8], driver)

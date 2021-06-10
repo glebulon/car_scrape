@@ -9,6 +9,7 @@ def search_settings_read():
     with open('settings/searches.json') as f:
         return(json.load(f))
 
+
 # generate a uuid and trim it
 def gen_unique():
     return str(uuid.uuid4()).split('-')[0]
@@ -78,3 +79,10 @@ def format_entry(entry):
     # title carfax
     car.append(entry[24])
     return car
+
+
+def check_get_key(dict, key):
+    if key in dict.keys():
+        return dict[key]
+    else:
+        return ""

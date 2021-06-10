@@ -5,3 +5,4 @@ chromedriver.exe
 carfax_creds.json
 run.log
 *.pyc
+reports/*
