@@ -1,16 +1,13 @@
 #!/usr/bin/python3
-import sys
-import time
+
 import traceback
 import logging
 import json
 import re
 from bs4 import BeautifulSoup
 from retrying import retry
-from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 import modules.constants as const
@@ -22,7 +19,7 @@ def carfax_viewer(vin, driver):
     driver.get("https://www.carfaxonline.com/vhrs/{}".format(vin))
     # wait to load in here
     try:
-        if not WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, "cfxHdrBar"))):
+        if not WebDriverWait(driver, 5).until(ec.presence_of_element_located((By.ID, "cfxHdrBar"))):
             logging.error(driver.page_source)
     except Exception as e:
         carfax_login()
@@ -55,12 +52,12 @@ def carfax_login(driver):
     driver.get("https://www.carfaxonline.com")
     try:
         driver.find_element_by_id('landing_signin_item-link').click()
-        WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.ID, "username"))).send_keys(login['username'])
-        WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.ID, "password"))).send_keys(login['password'])
+        WebDriverWait(driver, 5).until(ec.element_to_be_clickable((By.ID, "username"))).send_keys(login['username'])
+        WebDriverWait(driver, 5).until(ec.element_to_be_clickable((By.ID, "password"))).send_keys(login['password'])
         driver.find_element_by_id('login_button').click()
     except Exception as e:
         pass
-    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, "account_menu_item-link")))
+    WebDriverWait(driver, 5).until(ec.presence_of_element_located((By.ID, "account_menu_item-link")))
 
 def populate_carfax_info(cars, driver):
     carfax_login(driver)

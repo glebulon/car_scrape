@@ -1,14 +1,12 @@
 #!/usr/bin/python3
+import json
+import logging
+import re
 import sys
 import time
 import traceback
 
-import logging
-import json
-import re
 from bs4 import BeautifulSoup
-from retrying import retry
-from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
