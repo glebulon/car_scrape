@@ -17,77 +17,17 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
+
 # my own functions
-import modules.misc as misc
+import modules.carfax as cfax
 import modules.csv as csv
+import modules.misc as misc
+import modules.constants as cons
 
-# constants
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', filename='run.log', encoding='utf-8',
-                    level=logging.CRITICAL, datefmt='%Y-%m-%d %H:%M:%S')
-user_agent = r"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) \
-    Chrome/68.0.3440.84 Safari/537.36"
-options = webdriver.ChromeOptions()
-options.headless = True
-options.add_argument("--window-size=1920,1080")
-options.add_argument(user_agent)
-options.add_argument("--disable-gpu")
-options.binary_location = r"C:\Program Files (x86)\Google\Chrome Beta\Application\chrome.exe"
-chrome_driver_binary = r"D:\my documents\car_scrape\chromedriver.exe"
-driver = webdriver.Chrome(chrome_driver_binary, chrome_options=options)
-
-
-def carfax_login():
-    with open('carfax_creds.json') as f:
-        login = json.load(f)
-    driver.get("https://www.carfaxonline.com")
-    try:
-        driver.find_element_by_id('landing_signin_item-link').click()
-        WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.ID, "username"))).send_keys(login['username'])
-        WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.ID, "password"))).send_keys(login['password'])
-        driver.find_element_by_id('login_button').click()
-    except Exception as e:
-        pass
-    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, "account_menu_item-link")))
-
-
-@retry(stop_max_attempt_number=5)
-def carfax_viewer(vin):
-    driver.get("https://www.carfaxonline.com/vhrs/{}".format(vin))
-    # wait to load in here
-    try:
-        if not WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, "cfxHdrBar"))):
-            logging.error(driver.page_source)
-    except Exception as e:
-        carfax_login()
-        driver.get("https://www.carfaxonline.com/vhrs/{}".format(vin))
-    soup = BeautifulSoup(driver.page_source, "lxml")
-    # get the columns we need
-    sources = soup.find_all(class_="source-line")
-    fuel = soup.select('#headerFuel')[0].contents[0].strip() if soup.select('#headerFuel')[0].contents[0].strip() \
-        else ''
-    engine = soup.select('#headerEngineInfo')[0].contents[0].strip() if soup.select('#headerFuel')[0].contents[0].\
-        strip() else ''
-    drive = soup.select('#headerDriveline')[0].contents[0].strip() if soup.select('#headerDriveline')[0].contents[0].\
-        strip() else ''
-    # find all occurences of damage
-    damage = 0
-    for i in sources:
-        if i.find_all(string=re.compile("Damage Report")) != []:
-            damage += 1
-    # find title problems
-    title_problem = "yes" if len(soup.findAll('tr', {'id': "nonDamageBrandedTitleRowTableRow"})) != 0 else "no"
-    return([damage, title_problem, fuel, engine, drive])
-
-def carfax_mock(vin):
-    return([12, "no title issue carfax", "GAS", "V16", "6WD"])
-def checkAndGetKey(dict, key):
-    if key in dict.keys():
-        return dict[key]
-    else:
-        return ""
+# create a driver, open a window
+driver = cons.driver
 
 # get information about a specific car
-
 def cargurus_car_details(url, href):
     driver.get(url + href)
     timeout = 60
@@ -223,6 +163,12 @@ def cargurus_car_details(url, href):
         traceback.print_exception(exc_type, exc_value, exc_tb)
         return ""
 
+
+def checkAndGetKey(dict, key):
+    if key in dict.keys():
+        return dict[key]
+    else:
+        return ""
 # load the page and waits for a specific element to be there
 
 def cargurus_load_page(driver):
@@ -432,28 +378,9 @@ def date_stamp():
     return(time.strftime('%Y-%m-%d--%I-%M-%p'))
 
 
-def populate_carfax_info(cars):
-    carfax_login()
-    for car in cars:
-        results = carfax_viewer(car[8])
-        # results = carfax_mock(car[9])
-        car.append(results[0])
-        car.append(results[1])
-        car.append(results[2])
-        car.append(results[3])
-        car.append(results[4])
-    return cars
-
-# read in search
-
-def search_settings_read():
-    with open('settings/searches.json') as f:
-        return(json.load(f))
-
-
 def main():
-    # get the car listings
-    searches = search_settings_read()
+    # get the car searches
+    searches = misc.search_settings_read()
     # itterate over all entries and run a full search for each
     for search in searches:
         file_name = date_stamp() if not search['model'] else date_stamp() + '-' + search['model'] + '-' +\
@@ -467,7 +394,7 @@ def main():
                                     end=search['end_year'], mileage=search['mileage'],
                                     deal_quality=search['deal_quality'])
         # populate the carfax history
-        cars = populate_carfax_info(cars)
+        cars = cfax.populate_carfax_info(cars, driver)
         # write to csv file
         csv.write_to_csv(header="yes", payload=cars, file_name=file_name)
         logging.critical("Cars found: {}".format(len(cars)))
