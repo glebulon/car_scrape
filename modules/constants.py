@@ -16,4 +16,4 @@ options.add_argument("--disable-gpu")
 options.binary_location = r"C:\Program Files (x86)\Google\Chrome Beta\Application\chrome.exe"
 chrome_driver_binary = r"C:\Users\Gleb\Documents\code\car_scrape\chromedriver.exe"
 driver = webdriver.Chrome(chrome_driver_binary, chrome_options=options)
-carfax_creds = "carfax_credss.json"
+carfax_creds = "carfax_creds.json"
