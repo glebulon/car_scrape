@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from pathlib import Path
 import traceback
 import logging
 import json
@@ -42,12 +43,12 @@ def carfax_viewer(vin, driver):
     title_problem = "yes" if len(soup.findAll('tr', {'id': "nonDamageBrandedTitleRowTableRow"})) != 0 else "no"
     return([damage, title_problem, fuel, engine, drive])
 
-def carfax_mock(vin):
-    return([12, "no title issue carfax", "GAS", "V16", "6WD"])
+def carfax_mock():
+    return([1, "no title issue carfax", "GAS", "V8", "4WD"])
 
 
 def carfax_login(driver):
-    with open('carfax_creds.json') as f:
+    with open(const.carfax_creds) as f:
         login = json.load(f)
     driver.get("https://www.carfaxonline.com")
     try:
@@ -60,13 +61,21 @@ def carfax_login(driver):
     WebDriverWait(driver, 5).until(ec.presence_of_element_located((By.ID, "account_menu_item-link")))
 
 def populate_carfax_info(cars, driver):
-    carfax_login(driver)
-    for car in cars:
-        results = carfax_viewer(car[8], driver)
-        # results = carfax_mock(car[9])
-        car.append(results[0])
-        car.append(results[1])
-        car.append(results[2])
-        car.append(results[3])
-        car.append(results[4])
+    if not Path(const.carfax_creds).is_file():
+        for car in cars:
+            results = carfax_mock()
+            car.append(results[0])
+            car.append(results[1])
+            car.append(results[2])
+            car.append(results[3])
+            car.append(results[4])
+    else:
+        carfax_login(driver)
+        for car in cars:
+            results = carfax_viewer(car[8], driver)
+            car.append(results[0])
+            car.append(results[1])
+            car.append(results[2])
+            car.append(results[3])
+            car.append(results[4])
     return cars

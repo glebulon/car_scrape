@@ -6,3 +6,4 @@ carfax_creds.json
 run.log
 *.pyc
 reports/*
+toDo.txt
