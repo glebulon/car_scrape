@@ -213,19 +213,25 @@ def remove_cpo(driver):
 
 # select good priced car only
 def good_price_only(driver, deal):
-    for child in [12, 13]:
-        if deal == "good":
-            button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > \
-            div._4VrDe1 > div._3K15rt > div:nth-child(2) > fieldset:nth-child({}) > ul > li:nth-child(1) > label > \
-            p".format(child), driver)
-            button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > \
-            div._4VrDe1 > div._3K15rt > div:nth-child(2) > fieldset:nth-child({}) > ul > li:nth-child(2) > label > \
-            p".format(child), driver)
-        if deal == "great":
-            button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > \
-            div._4VrDe1 > div._3K15rt > div:nth-child(2) > fieldset:nth-child({}) > ul > li:nth-child(1) > label > \
-            p".format(child), driver)
+    if deal == "good":
+        good_deal = price_filter(driver, class_name='_2dnSXG', text='Good Deal')
+        great_deal = price_filter(driver, class_name='_2dnSXG', text='Great Deal')
+        good_deal.click()
+        great_deal.click()
+    if deal == "great":
+        great_deal = price_filter(driver, class_name='_2dnSXG', text='Great Deal')
+        great_deal.click
 
+# better way to only find good deals
+def price_filter(driver, class_name='_2dnSXG', text='Great Deal'):
+    # get all elements
+    matching = driver.find_elements_by_class_name("_2dnSXG")
+    # find the one that contains the text
+    for i in matching:
+        if text in i.text:
+            result = i
+            break
+    return i
 
 # pull out mileage from element
 def get_mileage(element):

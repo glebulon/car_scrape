@@ -15,10 +15,10 @@ driver = cons.driver
 
 # get the car searches
 searches = misc.search_settings_read()
-# date stamp to use in report name
-date_stamp = time.strftime('%Y-%m-%d--%I-%M-%p')
 # itterate over all entries and run a full search for each
 for search in searches:
+    # date stamp to use in report name
+    date_stamp = time.strftime('%Y-%m-%d--%I-%M-%p')
     file_name = date_stamp if not search['model'] else date_stamp + '-' + search['model'] + '-' +\
         misc.gen_unique()
     logging.critical("Start: " + file_name)
