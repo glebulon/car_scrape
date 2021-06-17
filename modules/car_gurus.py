@@ -375,8 +375,7 @@ def cars(driver, model="camry", year="", zip="02062", distance="3", number_of_li
 
 # get all the possible trims for this car
 def get_trims(driver):
-    trims = driver.find_element_by_xpath('//*[@id="cargurus-listing-search"]/div[1]/div/div[2]/div[1]/div[2]/div[2]/\
-        fieldset[6]')
+    trims = driver.find_element_by_xpath("//*[@data-cg-ft='filters-panel-filter-trim_name']")
     trims = trims.find_elements_by_xpath(".//ul/li")
     trim_list = [x.text.split('(')[0] for x in trims]
     return trim_list
