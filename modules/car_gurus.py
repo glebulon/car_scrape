@@ -337,6 +337,8 @@ def cars(driver, model="camry", year="", zip="02062", distance="3", number_of_li
     # create a list of cars
     cars = []
     page = 1
+    # get all possible trims of a given car
+    trims = get_trims(driver)
     # get all cars on the page
     raw_elements = load_page(driver)
     # filter out all cars that are sponsored and are above mileage threshold
@@ -370,3 +372,11 @@ def cars(driver, model="camry", year="", zip="02062", distance="3", number_of_li
             deduped_cars.append(item)
     logging.critical("Number of cars: {}".format(len(deduped_cars)))
     return deduped_cars
+
+# get all the possible trims for this car
+def get_trims(driver):
+    trims = driver.find_element_by_xpath('//*[@id="cargurus-listing-search"]/div[1]/div/div[2]/div[1]/div[2]/div[2]/\
+        fieldset[6]')
+    trims = trims.find_elements_by_xpath(".//ul/li")
+    trim_list = [x.text.split('(')[0] for x in trims]
+    return trim_list
