@@ -339,6 +339,7 @@ def cars(driver, model="camry", year="", zip="02062", distance="3", number_of_li
     page = 1
     # get all possible trims of a given car
     trims = get_trims(driver)
+    colors = get_colors(driver)
     # get all cars on the page
     raw_elements = load_page(driver)
     # filter out all cars that are sponsored and are above mileage threshold
@@ -367,15 +368,45 @@ def cars(driver, model="camry", year="", zip="02062", distance="3", number_of_li
 
     # remove duplicate entries, not sure why they are there
     deduped_cars = []
-    for item in cars:
-        if item not in deduped_cars:
-            deduped_cars.append(item)
+    for car in cars:
+        if car not in deduped_cars:
+            deduped_cars.append(car)
+
+    # add trim if it exists for every car
+    for car in deduped_cars:
+        trim = [x for x in car[1].split() if x in trims]
+        if trim:
+            car.append(trim[0])
+        else:
+            car.append("-")
+
+    # replace color with a more common name
+    for car in deduped_cars:
+        color = [x for x in car[6].split() if x in colors]
+        if color:
+            car[6] = (color[0])
+        else:
+            car[6] = ("-")
+
     logging.critical("Number of cars: {}".format(len(deduped_cars)))
     return deduped_cars
 
 # get all the possible trims for this car
 def get_trims(driver):
-    trims = driver.find_element_by_xpath("//*[@data-cg-ft='filters-panel-filter-trim_name']")
-    trims = trims.find_elements_by_xpath(".//ul/li")
-    trim_list = [x.text.split('(')[0] for x in trims]
-    return trim_list
+    try:
+        trims = driver.find_element_by_xpath("//*[@data-cg-ft='filters-panel-filter-trim_name']")
+        trims = trims.find_elements_by_xpath(".//ul/li")
+        trim_list = [x.text.split('(')[0] for x in trims]
+        return trim_list
+    except Exception:
+        return ["-"]
+
+# get all the possible trims for this car
+def get_colors(driver):
+    try:
+        colors = driver.find_element_by_xpath("//*[@data-cg-ft='filters-panel-filter-color']")
+        colors = colors.find_elements_by_xpath(".//ul/li")
+        color_list = [x.text.split('(')[0] for x in colors]
+        return color_list
+    except Exception:
+        return ["-"]

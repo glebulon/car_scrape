@@ -31,9 +31,9 @@ def format_entry(entry):
     # transmission
     car.append(entry[2])
     # drive
-    car.append(entry[27])
+    car.append(entry[28])
     # engine
-    car.append(entry[26])
+    car.append(entry[27])
     # leather
     car.append(entry[10])
     # moonroof
@@ -41,7 +41,7 @@ def format_entry(entry):
     # navigation
     car.append(entry[11])
     # accident(carfax)
-    car.append(entry[23])
+    car.append(entry[24])
     # accident(cargurus)
     car.append(entry[19])
     # dealer info
@@ -67,7 +67,7 @@ def format_entry(entry):
     # below/above mk
     car.append(entry[21])
     # fuel
-    car.append(entry[25])
+    car.append(entry[26])
     # compare to mk
     car.append(entry[22])
     # interior
@@ -77,7 +77,9 @@ def format_entry(entry):
     # title cargurus
     car.append(entry[19])
     # title carfax
-    car.append(entry[24])
+    car.append(entry[25])
+    # trim
+    car.append(entry[23])
     return car
 
 

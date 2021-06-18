@@ -23,7 +23,7 @@ def carfax_viewer(vin, driver):
         if not WebDriverWait(driver, 5).until(ec.presence_of_element_located((By.ID, "cfxHdrBar"))):
             logging.error(driver.page_source)
     except Exception as e:
-        carfax_login()
+        carfax_login(driver)
         driver.get("https://www.carfaxonline.com/vhrs/{}".format(vin))
     soup = BeautifulSoup(driver.page_source, "lxml")
     # get the columns we need
