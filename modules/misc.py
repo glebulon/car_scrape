@@ -75,7 +75,7 @@ def format_entry(entry):
     # days on cargurus
     car.append(entry[18])
     # title cargurus
-    car.append(entry[19])
+    car.append(entry[20])
     # title carfax
     car.append(entry[25])
     # trim

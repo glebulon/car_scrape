@@ -61,21 +61,16 @@ def carfax_login(driver):
     WebDriverWait(driver, 5).until(ec.presence_of_element_located((By.ID, "account_menu_item-link")))
 
 def populate_carfax_info(cars, driver):
-    if not Path(const.carfax_creds).is_file():
-        for car in cars:
+    for car in cars:
+        # mock
+        if not Path(const.carfax_creds).is_file():
             results = carfax_mock()
-            car.append(results[0])
-            car.append(results[1])
-            car.append(results[2])
-            car.append(results[3])
-            car.append(results[4])
-    else:
-        carfax_login(driver)
-        for car in cars:
+        else:
             results = carfax_viewer(car[8], driver)
-            car.append(results[0])
-            car.append(results[1])
-            car.append(results[2])
-            car.append(results[3])
-            car.append(results[4])
+        # append the results
+        car.append(results[0])
+        car.append(results[1])
+        car.append(results[2])
+        car.append(results[3])
+        car.append(results[4])
     return cars
