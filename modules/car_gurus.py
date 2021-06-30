@@ -306,14 +306,21 @@ def remove_auth_del_spon(raw_elements, mileage):
 # this is the main function, the entry point to the other ones for cargurus
 def cars(driver, model="camry", year="", zip="02062", distance="3", number_of_listings=0, deal_quality="",
          start="", end="", mileage=""):
-    # look up the code for the model of car
-    with open('models_lower_case.json') as f:
-        models = json.load(f)
-    model_code = models[model]
+
     # build cargurus url
-    url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}\
-           &showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE&\
-           entitySelectingHelper.selectedEntity={2}".format(zip, distance, model_code)
+    if model:
+        # look up the code for the model of car
+        with open('models_lower_case.json') as f:
+            models = json.load(f)
+        model_code = models[model]
+
+        url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}\
+            &showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE&\
+            entitySelectingHelper.selectedEntity={2}".format(zip, distance, model_code)
+    else:
+        url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}\
+            &showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE"\
+                .format(zip, distance)
 
     # load page
     driver.get(url)
@@ -382,11 +389,13 @@ def cars(driver, model="camry", year="", zip="02062", distance="3", number_of_li
 
     # replace color with a more common name
     for car in deduped_cars:
-        color = [x for x in car[6].split() if x in colors]
-        if color:
-            car[6] = (color[0])
-        else:
-            car[6] = ("-")
+        # only do this if a color is available
+        if colors != ["-"]:
+            color = [x for x in car[6].split() if x in colors]
+            if color:
+                car[6] = (color[0])
+            else:
+                car[6] = ("-")
 
     logging.critical("Number of cars: {}".format(len(deduped_cars)))
     return deduped_cars

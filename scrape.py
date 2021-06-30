@@ -6,6 +6,7 @@ import time
 # my own functions
 import modules.car_fax as cfax
 import modules.car_gurus as cgur
+#import modules.car_offer as coffer
 import modules.csv as csv
 import modules.misc as misc
 import modules.constants as cons
@@ -31,6 +32,8 @@ for search in searches:
                             deal_quality=search['deal_quality'])
     # populate the carfax history
     cars = cfax.populate_carfax_info(cars, driver)
+
+#    cars = coffer.get_offer(driver, cars)
     # write to csv file
     csv.write_to_csv(header="yes", payload=cars, file_name=file_name)
     logging.critical("Cars found: {}".format(len(cars)))
