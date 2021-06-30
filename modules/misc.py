@@ -82,6 +82,18 @@ def format_entry(entry):
     car.append(entry[23])
     return car
 
+def get_prefix(search):
+    model = search['model'] if search['model'] else ""
+    make = search['make'] if search['make'] else ""
+    if model and make:
+        prefix = "{}-{}".format(make, model)
+    elif model:
+        prefix = "{}".format(model)
+    elif make:
+        prefix = "{}".format(make)
+    else:
+        prefix = ""
+    return(prefix)
 
 def check_get_key(dict, key):
     if key in dict.keys():

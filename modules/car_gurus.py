@@ -304,7 +304,7 @@ def remove_auth_del_spon(raw_elements, mileage):
 
 
 # this is the main function, the entry point to the other ones for cargurus
-def cars(driver, model="camry", year="", zip="02062", distance="3", number_of_listings=0, deal_quality="",
+def cars(driver, model="", make="", zip="02062", distance="3", number_of_listings=0, deal_quality="",
          start="", end="", mileage=""):
 
     # build cargurus url
@@ -317,7 +317,16 @@ def cars(driver, model="camry", year="", zip="02062", distance="3", number_of_li
         url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}\
             &showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE&\
             entitySelectingHelper.selectedEntity={2}".format(zip, distance, model_code)
-    else:
+    if make:
+        with open('car_makes.json') as f:
+            makes = json.load(f)
+        make_code = makes[make]
+
+        url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}\
+            &showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE&\
+                entitySelectingHelper.selectedEntity={2}'".format(zip, distance, make_code)
+
+    if not make and not model:
         url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}\
             &showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE"\
                 .format(zip, distance)
