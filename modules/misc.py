@@ -85,14 +85,12 @@ def format_entry(entry):
 def get_prefix(search):
     model = search['model'] if search['model'] else ""
     make = search['make'] if search['make'] else ""
-    if model and make:
-        prefix = "{}-{}".format(make, model)
-    elif model:
+    if model:
         prefix = "{}".format(model)
     elif make:
         prefix = "{}".format(make)
     else:
-        prefix = ""
+        prefix = "all"
     return(prefix)
 
 def check_get_key(dict, key):

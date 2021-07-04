@@ -400,11 +400,10 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
     for car in deduped_cars:
         # only do this if a color is available
         if colors != ["-"]:
+            # only replace the color if there is a  match, otherwise leave it the way it was
             color = [x for x in car[6].split() if x in colors]
             if color:
                 car[6] = (color[0])
-            else:
-                car[6] = ("-")
 
     logging.critical("Number of cars: {}".format(len(deduped_cars)))
     return deduped_cars
