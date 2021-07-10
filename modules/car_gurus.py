@@ -200,7 +200,7 @@ def next_page(driver, first=True):
 
 # unclick the checkbox that shows cars with no price
 def remove_no_price(driver):
-    button_click("css", "div > .XHYfqj > .\\_2dnSXG", driver)
+    driver.find_element_by_xpath("//*[text()='{}']".format('Include Listings Without Available Pricing')).click()
 
 
 # press the clear button for CPO/used/new
@@ -214,24 +214,14 @@ def remove_cpo(driver):
 # select good priced car only
 def good_price_only(driver, deal):
     if deal == "good":
-        good_deal = price_filter(driver, class_name='_2dnSXG', text='Good Deal')
-        great_deal = price_filter(driver, class_name='_2dnSXG', text='Great Deal')
+        good_deal = driver.find_element_by_xpath("//*[text()='{}']".format('Good Deal'))
+        great_deal = driver.find_element_by_xpath("//*[text()='{}']".format('Great Deal'))
         good_deal.click()
         great_deal.click()
     if deal == "great":
-        great_deal = price_filter(driver, class_name='_2dnSXG', text='Great Deal')
+        great_deal = driver.find_element_by_xpath("//*[text()='{}']".format('Great Deal'))
         great_deal.click
 
-# better way to only find good deals
-def price_filter(driver, class_name='_2dnSXG', text='Great Deal'):
-    # get all elements
-    matching = driver.find_elements_by_class_name("_2dnSXG")
-    # find the one that contains the text
-    for i in matching:
-        if text in i.text:
-            result = i
-            break
-    return i
 
 # pull out mileage from element
 def get_mileage(element):
@@ -337,7 +327,7 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
     wait_to_load(driver)
     # select years if provided
     try:
-        if start or end:
+        if (start or end) and model:
             year_range(start, end, driver)
     except Exception:
         print(traceback.format_exc())
@@ -375,6 +365,10 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
         elements = remove_auth_del_spon(raw_elements, mileage)
         for element in elements:
             all_elements.append(element)
+
+    # remove all elements that are higher in number than requested number of cars
+    if len(all_elements) > number_of_listings:
+        all_elements = all_elements[0:number_of_listings]
 
     # find hrefs and get details of all cars
     new_details = get_details(driver, all_elements, url)
