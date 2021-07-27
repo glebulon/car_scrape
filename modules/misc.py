@@ -14,6 +14,11 @@ def search_settings_read():
 def gen_unique():
     return str(uuid.uuid4()).split('-')[0]
 
+def run_car_offer():
+    settings = search_settings_read()
+    car_offer = True if settings['car_offer'] == "yes" else False
+    return car_offer
+
 
 # put all info in the correct order
 def format_entry(entry):
@@ -49,7 +54,7 @@ def format_entry(entry):
     # price
     car.append(entry[4])
     # offer
-    car.append("-")
+    car.append(entry[29])
     # profit
     car.append("-")
     # name

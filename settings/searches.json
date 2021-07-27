@@ -1,22 +1,13 @@
 [
     {
-        "model": "focus",
-        "start_year": "2017",
-        "end_year": "2020",
-        "zipcode": "01602",
+        "make": "",
+        "model": "rogue",
+        "start_year": "2016",
+        "end_year": "2021",
+        "zipcode": "02062",
         "distance": 75,
         "deal_quality": "good",
-        "number_of_listings": 60,
-        "mileage": 70000
-    },
-    {
-        "model": "focus",
-        "start_year": "2017",
-        "end_year": "2020",
-        "zipcode": "01602",
-        "distance": 75,
-        "deal_quality": "",
-        "number_of_listings": 60,
-        "mileage": 70000
+        "number_of_listings": 50,
+        "mileage": 50000
     }
 ]

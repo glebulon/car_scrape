@@ -96,9 +96,9 @@ def car_details(url, href, driver):
         # leaving blank, vic wants the manager's name
         name = "-"
         current_car_info.append(name)
-        # distance from zipcode
-        distance_town = current_car_soup.find_all(class_="_3CFFR5")[0].text
         try:
+            # distance from zipcode
+            distance_town = current_car_soup.find_all(class_="_3CFFR5")[0].text
             current_car_info.append(distance_town.split("·")[0].strip())
         except Exception as e:
             current_car_info.append("-")
@@ -116,9 +116,13 @@ def car_details(url, href, driver):
             div._36TanG > div._24ffzL > div._5jSLnT > div._2Bszua._5PSqaB > div._5j5D2G > div:nth-child(1) > \
                 div._5kdMnf > div._5XcXHD > strong')[0].text)
         # accidents from cargurus
-        current_car_info.append(current_car_soup.find_all(class_="_5gudF3")[1].text)
-        # title issues
-        current_car_info.append(current_car_soup.find_all(class_="_5gudF3")[0].text)
+        try:
+            current_car_info.append(current_car_soup.find_all(class_="_5gudF3")[1].text)
+            # title issues
+            current_car_info.append(current_car_soup.find_all(class_="_5gudF3")[0].text)
+        except Exception:
+            current_car_info.append("-")
+            current_car_info.append("-")
         # price versus market
         # store the element
         try:

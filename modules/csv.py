@@ -12,7 +12,7 @@ def write_to_csv(header="yes", file_name="", payload=None, source="cargurus"):
                              "accidents({})".format(source), "dealer info", "price", "offer", "profit", "name",
                              "phone", "notes", "car link", "dealership town", "distance from zip", "below/above mk",
                              "fuel", "compare to mk", "interior", "days on ({})".format(source),
-                             "title({})".format(source), "title problem(carfax)", "trim"
+                             "title({})".format(source), "title problem(carfax)", "trim", "cor-offer"
                              ]
                             )
         for entry in payload:

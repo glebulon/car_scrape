@@ -32,7 +32,7 @@ for search in searches:
                             deal_quality=search['deal_quality'])
     # populate the carfax history
     cars = cfax.populate_carfax_info(cars, driver)
-
+    # get a car offer offer
     cars = coffer.get_offer(driver, cars)
     # write to csv file
     csv.write_to_csv(header="yes", payload=cars, file_name=file_name)
