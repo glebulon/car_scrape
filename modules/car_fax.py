@@ -48,13 +48,15 @@ def carfax_mock():
 
 
 def carfax_login(driver):
-    with open(const.carfax_creds) as f:
+    with open(const.creds) as f:
         login = json.load(f)
     driver.get("https://www.carfaxonline.com")
     try:
         driver.find_element_by_id('landing_signin_item-link').click()
-        WebDriverWait(driver, 5).until(ec.element_to_be_clickable((By.ID, "username"))).send_keys(login['username'])
-        WebDriverWait(driver, 5).until(ec.element_to_be_clickable((By.ID, "password"))).send_keys(login['password'])
+        WebDriverWait(driver, 5).until(ec.element_to_be_clickable((By.ID, "username"))).\
+            send_keys(login['carfax']['username'])
+        WebDriverWait(driver, 5).until(ec.element_to_be_clickable((By.ID, "password"))).\
+            send_keys(login['carfax']['password'])
         driver.find_element_by_id('login_button').click()
     except Exception as e:
         pass
@@ -63,7 +65,7 @@ def carfax_login(driver):
 def populate_carfax_info(cars, driver):
     for car in cars:
         # mock
-        if not Path(const.carfax_creds).is_file():
+        if not Path(const.creds).is_file():
             results = carfax_mock()
         else:
             results = carfax_viewer(car[8], driver)

@@ -2,7 +2,7 @@ get-pip.py
 chromedriver.exe
 *.csv
 .vscode/*
-carfax_creds.json
+*creds.json
 run.log
 *.pyc
 reports/*

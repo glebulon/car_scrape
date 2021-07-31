@@ -287,6 +287,7 @@ def remove_auth_del_spon(raw_elements, mileage):
     # Sponsored, Authorized.*Dealer, are not not empty and if mileage is provided filter on mileage
     elements = [x for x in raw_elements if (
                 not re.search('Sponsored', x.text))
+                and (not re.search('store transfer', x.text))
                 and (not re.search('Authorized.*Dealer', x.text))
                 and (x.select('#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > \
                     div._5K96zi._3QziWR > div._3LnDeD > div:nth-child(6) > div > a > div._4yP575._2PDkfp > div > \

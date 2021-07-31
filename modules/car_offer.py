@@ -12,22 +12,24 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 import modules.misc as m
-import modules.constants as cons
+import modules.constants as const
 
 
 # log in to the website, needs some work
 def login(driver):
+    with open(const.creds) as f:
+        login = json.load(f)
     driver.get("https://caroffer.pearlsolutions.com/?redirect=%2Fuser%2Flogin#/user/login")
     # wait for the box to show up
-    WebDriverWait(driver, 10).until(ec.visibility_of_element_located((By.ID, "userName")))
+    WebDriverWait(driver, 60).until(ec.visibility_of_element_located((By.ID, "userName")))
     driver.find_element(By.ID, "userName").click()
-    driver.find_element(By.ID, "userName").send_keys("xxx")
+    driver.find_element(By.ID, "userName").send_keys(login['caroffer']['username'])
     driver.find_element(By.ID, "password").click()
-    driver.find_element(By.ID, "password").send_keys("xxx")
-    WebDriverWait(driver, 5).until(ec.visibility_of_element_located((By.CSS_SELECTOR, ".ant-btn")))
+    driver.find_element(By.ID, "password").send_keys(login['caroffer']['password'])
+    WebDriverWait(driver, 60).until(ec.visibility_of_element_located((By.CSS_SELECTOR, ".ant-btn")))
     driver.find_element(By.CSS_SELECTOR, ".ant-btn").click()
     # wait for the instant offer button to show up
-    WebDriverWait(driver, 20).until(ec.element_to_be_clickable((By.XPATH, '//*[@id="content"]/div/div/div/div[3]/\
+    WebDriverWait(driver, 60).until(ec.element_to_be_clickable((By.XPATH, '//*[@id="content"]/div/div/div/div[3]/\
         div[1]/div[2]/div[1]/div[2]/div[1]/div[2]/button')))
 
 
@@ -61,7 +63,7 @@ def select_color(driver, color):
     # pick the color
     selector.click()
     # might need to fogure this out
-    WebDriverWait(driver, 20).until(ec.element_to_be_clickable((By.XPATH, '//*[text()="{}"]'.format(color[0]))))
+    WebDriverWait(driver, 60).until(ec.element_to_be_clickable((By.XPATH, '//*[text()="{}"]'.format(color[0]))))
     selector.find_element_by_xpath("//*[text()='{}']".format(color[0])).click()
 
 def get_car_info(car):
@@ -90,14 +92,16 @@ def get_car_info(car):
     return details
 
 def enter_vin(driver, vin):
-    xpath = '//*[@id="content"]/div/div/div/div[3]/div[1]/div[2]/div[1]/div[2]/div[1]/div[2]/button'
     try:
-        # press the get offer button from hopmepage
-        WebDriverWait(driver, 15).until(ec.element_to_be_clickable((By.XPATH, xpath)))
-        driver.find_element(By.XPATH, xpath).click()
+        cn = 'vehicleGetButton___1sNi8'
+        # check that the button is there
+        button = WebDriverWait(driver, 15).until(ec.visibility_of_element_located((By.CLASS_NAME, cn)))
+        # button to press
+        button.find_element_by_tag_name('button').click()
     except Exception:
         print("Didn't press Get Instant Offer")
         print(traceback.format_exc())
+        pass
     # wait for vin box
     WebDriverWait(driver, 15).until(ec.visibility_of_element_located((By.CSS_SELECTOR, ".ant-input-lg")))
     driver.find_element(By.CSS_SELECTOR, ".ant-input-lg").clear()
@@ -106,7 +110,7 @@ def enter_vin(driver, vin):
 
 
 def enter_mileage(driver, mileage):
-    WebDriverWait(driver, 15).until(ec.visibility_of_element_located((By.ID, "tradeGradeMileage")))
+    WebDriverWait(driver, 60).until(ec.visibility_of_element_located((By.ID, "tradeGradeMileage")))
     driver.find_element(By.ID, "tradeGradeMileage").click()
     driver.find_element(By.ID, "tradeGradeMileage").send_keys(mileage)
 
@@ -119,6 +123,7 @@ def has_leather(driver, leather):
         xpath = "/html/body/div[7]/div/div/div/div/div[2]/div/div[2]/div/div[8]/div/div[2]/div/div/div[1]/div/"
         xpath = xpath + "button[1]" if leather == "yes" else xpath + "button[2]"
         driver.find_element(By.XPATH, xpath).click()
+        pass
 
 def has_moonroof(driver, moonroof):
     try:
@@ -129,6 +134,7 @@ def has_moonroof(driver, moonroof):
         xpath = "/html/body/div[7]/div/div/div/div/div[2]/div/div[2]/div/div[8]/div/div[2]/div/div/div[2]/div/"
         xpath = xpath + "button[1]" if moonroof == "yes" else xpath + "button[2]"
         driver.find_element(By.XPATH, xpath).click()
+        pass
 
 def has_navi(driver, navi):
     try:
@@ -139,17 +145,18 @@ def has_navi(driver, navi):
         xpath = "/html/body/div[7]/div/div/div/div/div[2]/div/div[2]/div/div[8]/div/div[2]/div/div/div[3]/div/"
         xpath = xpath + "button[1]" if navi == "yes" else xpath + "button[2]"
         driver.find_element(By.XPATH, xpath).click()
+        pass
 
 def press_vehicle_option(driver):
     driver.find_element(By.CSS_SELECTOR, "#optionsCard > button").click()
-    WebDriverWait(driver, 10).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "#trimsCard > h5")))
+    WebDriverWait(driver, 60).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "#trimsCard > h5")))
 
 def next_condition(driver):
     next = driver.find_element_by_xpath("//*[text()='{}']".format('Next: Condition'))
     next.find_element_by_xpath("./..").click()
 
 def certified_no(driver):
-    WebDriverWait(driver, 20).until(ec.element_to_be_clickable((By.CSS_SELECTOR,
+    WebDriverWait(driver, 60).until(ec.element_to_be_clickable((By.CSS_SELECTOR,
                                                                "#IS_CPO > div > button:nth-child(2)")))
     driver.find_element_by_css_selector("#IS_CPO > div > button:nth-child(2)").click()
 
@@ -163,10 +170,11 @@ def select_accidents(driver, accidents):
         button = None
     # select
     if button:
-        WebDriverWait(driver, 20).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector_base + button)))
+        WebDriverWait(driver, 60).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector_base + button)))
         driver.find_element_by_css_selector(selector_base + button).click()
-        WebDriverWait(driver, 20).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector_base + button)))
+        WebDriverWait(driver, 60).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector_base + button)))
         driver.find_element_by_css_selector(selector_base + button).click()
+        certified_no(driver)
 
 def get_offer_button(driver):
     try:
@@ -177,6 +185,7 @@ def get_offer_button(driver):
         for button in buttons:
             if "Get Offer" in button.text:
                 button.click
+        pass
 
 
 def get_price(driver, vin):
@@ -185,16 +194,28 @@ def get_price(driver, vin):
         driver.find_element_by_class_name('ant-drawer-close').click()
     except Exception:
         pass
-    driver.find_element_by_css_selector("div.filtersSearch___pA52_ > span > input").click()
+    # wait for dialog to be clickable
+    selector = "div.filtersSearch___pA52_ > span > input"
+    WebDriverWait(driver, 15).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+    driver.find_element_by_css_selector(selector).click()
     # clear text from field
-    driver.find_element_by_css_selector("div.filtersSearch___pA52_ > span > input").clear()
-    driver.find_element_by_css_selector("div.filtersSearch___pA52_ > span > input").send_keys(vin)
+    driver.find_element_by_css_selector(selector).clear()
+    driver.find_element_by_css_selector(selector).send_keys(vin)
+    try:
+        # refresh trades
+        driver.find_element_by_css_selector('#content > div > div > div > \
+        div.ant-tabs-content.ant-tabs-content-animated.ant-tabs-top-content > \
+            div.ant-tabs-tabpane.ant-tabs-tabpane-active > div:nth-child(2) > div.offers___1mOSX > div:nth-child(3) > \
+                div.filtersSearchAndSelect___1Hz9D > div:nth-child(1) > i > svg').click()
+    except Exception:
+        pass
     try:
         selector = "div.offerAmount___ooWOd.highlighted___2pqMl"
         WebDriverWait(driver, 60).until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
         price = driver.find_element_by_css_selector(selector).text
     except Exception:
         price = "FAIL"
+        pass
     return price
 
 # if no engine is selected pick one
@@ -239,9 +260,8 @@ def kbb_discrepancy_fix(driver, details):
         pass
 
 def select_style(driver, make_model=""):
-
     selector = "#optionsCard > div:nth-child(1) > div > div > div"
-    WebDriverWait(driver, 15).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+    WebDriverWait(driver, 60).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector)))
     style = driver.find_element_by_css_selector(selector)
 
     if style.text == "Style":
@@ -263,44 +283,44 @@ def select_style(driver, make_model=""):
 
 
 def confirm_trims(driver, make_model=""):
-    list_of_divs = [
-        '#trimsCard > div:nth-child(2) > div > div > div',
-        '#trimsCard > div:nth-child(3) > div > div > div > div.ant-select-selection-selected-value',
-        '#trimsCard > div:nth-child(4) > div > div > div > div',
-        '#trimsCard > div:nth-child(5) > div > div > div > div'
-    ]
-    for div in list_of_divs:
-        WebDriverWait(driver, 15).until(ec.element_to_be_clickable((By.CSS_SELECTOR, div)))
-        style = driver.find_element_by_css_selector(div)
-        if "Select" in style.text:
-            style.click()
-            tags = style.find_elements_by_xpath("//*/ul/li/*")
-            trims = [x for x in tags if x.tag_name == "span"]
-            # set a var if no matches are found
-            matches = 0
-            # compare text in each trim versus text in make_model, if matches click
-            for i in trims:
-                # split each section on space and convert to lowercase
-                trim = i.text.lower().split()
-                trim = [x.lower() for x in trim]
-                # do the same for make and model
-                model = [x.lower() for x in make_model.split()]
-                # check if any of the words are the same
-                if not set(trim).isdisjoint(model):
-                    # if same the click
-                    try:
-                        i.click()
-                    except Exception:
-                        pass
-                    matches = 1
-            # select the last one if none matches
-            if matches == 0:
-                trims[-1].click()
+    # get the trimsCard element
+    tr = driver.find_element_by_id('trimsCard')
+    # get the dropdowns inside, kbb, black book, etc
+    kbb_bb_jd_au = tr.find_elements_by_class_name('ant-select-selection__rendered')
+
+    for style in kbb_bb_jd_au:
+        try:
+            if "Select" in style.text:
+                style.click()
+                tags = style.find_elements_by_xpath("//*/ul/li/*")
+                trims = [x for x in tags if (x.tag_name == "span" and x.text != '')]
+                # set a var if no matches are found
+                matches = 0
+                # compare text in each trim versus text in make_model, if matches click
+                for i in trims:
+                    # split each section on space and convert to lowercase
+                    trim = i.text.lower().split()
+                    trim = [x.lower() for x in trim]
+                    # do the same for make and model
+                    model = [x.lower() for x in make_model.split()]
+                    # check if any of the words are the same
+                    if not set(trim).isdisjoint(model):
+                        # if same the click
+                        try:
+                            i.click()
+                        except Exception:
+                            pass
+                        matches = 1
+                # select the last one if none matches
+                if matches == 0:
+                    trims[-1].click()
+        except Exception:
+            pass
 
 def check_if_entered(driver):
     string = 'Sorry. This vehicle cannot be submitted because an offer has been received and pending a response.'
     try:
-        WebDriverWait(driver, 5).until(ec.presence_of_element_located((By.XPATH, "//*[text()='{}']".format(string))))
+        WebDriverWait(driver, 30).until(ec.presence_of_element_located((By.XPATH, "//*[text()='{}']".format(string))))
         entered_already = True
     except Exception:
         entered_already = None
