@@ -20,7 +20,7 @@ searches = misc.search_settings_read()
 for search in searches:
     # date stamp to use in report name
     date_stamp = time.strftime('%Y-%m-%d--%I-%M-%p')
-    file_prefix = misc.get_prefix(search)
+    file_prefix = misc.get_prefix(search).replace(' ', '-')
     file_name = date_stamp if not file_prefix else date_stamp + '-' + file_prefix + '-' + misc.gen_unique()
     logging.critical("Start: " + file_name)
     logging.critical(search)

@@ -14,6 +14,16 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 import modules.misc as m
 import modules.constants as const
 
+def login_creds():
+    try:
+        with open(const.creds) as f:
+            login = json.load(f)
+        username = login['caroffer']['username']
+        password = login['caroffer']['password']
+        return True
+    except Exception:
+        return False
+
 
 # log in to the website, needs some work
 def login(driver):
@@ -54,8 +64,7 @@ def get_color(color):
 def select_color(driver, color):
     colors = ["Black", "Blue", "Brown", "Gold", "Gray", "Green", "Maroon", "Orange", "Purple", "Red", "Silver", "Tan",
               "White", "Yellow"]
-    selector = driver.find_element(By.CSS_SELECTOR, "div:nth-child(3) > .ant-select:nth-child(2) \
-                                                    .ant-select-selection__placeholder")
+    selector = driver.find_element_by_xpath("//*[text()='{}']".format("Exterior Color"))
     # if the color matches, use it, otherwise just pick black
     color = [x for x in colors if color.capitalize() == x]
     # if the list is empty add Black to it
@@ -114,38 +123,29 @@ def enter_mileage(driver, mileage):
     driver.find_element(By.ID, "tradeGradeMileage").click()
     driver.find_element(By.ID, "tradeGradeMileage").send_keys(mileage)
 
+
 def has_leather(driver, leather):
-    try:
-        xpath = "/html/body/div[6]/div/div/div/div/div[2]/div/div[2]/div/div[8]/div/div[2]/div/div/div[1]/div/"
-        xpath = xpath + "button[1]" if leather == "yes" else xpath + "button[2]"
-        driver.find_element(By.XPATH, xpath).click()
-    except Exception:
-        xpath = "/html/body/div[7]/div/div/div/div/div[2]/div/div[2]/div/div[8]/div/div[2]/div/div/div[1]/div/"
-        xpath = xpath + "button[1]" if leather == "yes" else xpath + "button[2]"
-        driver.find_element(By.XPATH, xpath).click()
-        pass
+    # get all double buttons
+    double_buttons = driver.find_elements_by_class_name('doubletButton___3Cqkd')
+    # leather is the first one
+    leather = double_buttons[0].find_elements_by_tag_name('button')
+    # 1 if yes, 0 if no
+    button = 1 if leather == "yes" else 0
+    # make the selection
+    leather[button].click()
+
 
 def has_moonroof(driver, moonroof):
-    try:
-        xpath = "/html/body/div[6]/div/div/div/div/div[2]/div/div[2]/div/div[8]/div/div[2]/div/div/div[2]/div/"
-        xpath = xpath + "button[1]" if moonroof == "yes" else xpath + "button[2]"
-        driver.find_element(By.XPATH, xpath).click()
-    except Exception:
-        xpath = "/html/body/div[7]/div/div/div/div/div[2]/div/div[2]/div/div[8]/div/div[2]/div/div/div[2]/div/"
-        xpath = xpath + "button[1]" if moonroof == "yes" else xpath + "button[2]"
-        driver.find_element(By.XPATH, xpath).click()
-        pass
+    double_buttons = driver.find_elements_by_class_name('doubletButton___3Cqkd')
+    moonroof = double_buttons[1].find_elements_by_tag_name('button')
+    button = 1 if moonroof == "yes" else 0
+    moonroof[button].click()
 
 def has_navi(driver, navi):
-    try:
-        xpath = "/html/body/div[6]/div/div/div/div/div[2]/div/div[2]/div/div[8]/div/div[2]/div/div/div[3]/div/"
-        xpath = xpath + "button[1]" if navi == "yes" else xpath + "button[2]"
-        driver.find_element(By.XPATH, xpath).click()
-    except Exception:
-        xpath = "/html/body/div[7]/div/div/div/div/div[2]/div/div[2]/div/div[8]/div/div[2]/div/div/div[3]/div/"
-        xpath = xpath + "button[1]" if navi == "yes" else xpath + "button[2]"
-        driver.find_element(By.XPATH, xpath).click()
-        pass
+    double_buttons = driver.find_elements_by_class_name('doubletButton___3Cqkd')
+    navi = double_buttons[2].find_elements_by_tag_name('button')
+    button = 1 if navi == "yes" else 0
+    navi[button].click()
 
 def press_vehicle_option(driver):
     driver.find_element(By.CSS_SELECTOR, "#optionsCard > button").click()
@@ -229,9 +229,16 @@ def fix_engine_tranny_drive(driver):
             element.click()
             # this is a pita
             ul = driver.find_elements_by_tag_name("ul")
+            # got through each option and if it matches select it
+            found = None
             for i in ul:
                 if "{}".format(x[1]) in i.text:
                     i.click()
+                    found = 1
+            # if no option is found select the last one
+            if not found:
+                ul[-1].click()
+
 
 def flip_choice(choice):
     if choice == "no":
@@ -334,33 +341,39 @@ def mileage_is_correct(driver):
         pass
 
 def get_offer(driver, cars):
-    # log in first
-    login(driver)
-    for car in cars:
-        try:
-            details = get_car_info(car)
-            enter_vin(driver, details['vin'])
-            # do this if the car wasn't entered already
-            if not check_if_entered(driver):
-                select_style(driver, details['make_model'])
-                enter_mileage(driver, details['mileage'])
-                select_color(driver, details['color'])
-                mileage_is_correct(driver)
-                press_vehicle_option(driver)
-                confirm_trims(driver, details['make_model'])
-                fix_engine_tranny_drive(driver)
-                has_leather(driver, details['leather'])
-                has_moonroof(driver, details['moonroof'])
-                has_navi(driver, details['navigation'])
-                kbb_discrepancy_fix(driver, details)
-                next_condition(driver)
-                certified_no(driver)
-                select_accidents(driver, details['accidents'])
-                get_offer_button(driver)
-            car.append(get_price(driver, details['vin']))
-        except Exception:
-            print(traceback.format_exc())
-            car.append("FAIL")
-            driver.refresh()
-            continue
+    # only do all of this if creds are found
+    if login_creds():
+        # log in first
+        login(driver)
+        for car in cars:
+            try:
+                details = get_car_info(car)
+                enter_vin(driver, details['vin'])
+                # do this if the car wasn't entered already
+                if not check_if_entered(driver):
+                    select_style(driver, details['make_model'])
+                    enter_mileage(driver, details['mileage'])
+                    select_color(driver, details['color'])
+                    mileage_is_correct(driver)
+                    press_vehicle_option(driver)
+                    confirm_trims(driver, details['make_model'])
+                    fix_engine_tranny_drive(driver)
+                    has_leather(driver, details['leather'])
+                    has_moonroof(driver, details['moonroof'])
+                    has_navi(driver, details['navigation'])
+                    kbb_discrepancy_fix(driver, details)
+                    next_condition(driver)
+                    certified_no(driver)
+                    select_accidents(driver, details['accidents'])
+                    get_offer_button(driver)
+                car.append(get_price(driver, details['vin']))
+            except Exception:
+                print(traceback.format_exc())
+                driver.save_screenshot("screenshots/caroffer/{}.png".format(details['vin']))
+                car.append("FAIL")
+                driver.refresh()
+                continue
+        else:
+            for car in cars:
+                car.append("No Creds")
     return cars
