@@ -30,8 +30,11 @@ for search in searches:
                             distance=search['distance'], number_of_listings=search['number_of_listings'],
                             start=search['start_year'], end=search['end_year'], mileage=search['mileage'],
                             deal_quality=search['deal_quality'])
+    print("Finished cargurus, starting carfax")
+    print("Cars found: {}".format(len(cars)))
     # populate the carfax history
     cars = cfax.populate_carfax_info(cars, driver)
+    print("Finished carfax, starting car_offer")
     # get a car offer offer
     cars = coffer.get_offer(driver, cars)
     # write to csv file

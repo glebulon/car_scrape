@@ -145,7 +145,6 @@ def car_details(url, href, driver):
                 # append 2 spots
                 current_car_info.append("-")
                 current_car_info.append("-")
-        print(current_car_info)
         # return data
         return current_car_info
     except Exception as e:
@@ -169,6 +168,9 @@ def load_page(driver):
     html = driver.page_source
     soup = BeautifulSoup(html, 'html.parser')
     elements = soup.find_all("div", {"class": "EUQoKn"})
+    # try another class if can't get any info
+    if len(elements) == 0:
+        elements = soup.find_all("div", {"class": "_21KssQ _2XEkAU"})
     return elements
 
 
@@ -218,13 +220,19 @@ def remove_cpo(driver):
 # select good priced car only
 def good_price_only(driver, deal):
     if deal == "good":
-        good_deal = driver.find_element_by_xpath("//*[text()='{}']".format('Good Deal'))
-        great_deal = driver.find_element_by_xpath("//*[text()='{}']".format('Great Deal'))
-        good_deal.click()
-        great_deal.click()
+        try:
+            good_deal = driver.find_element_by_xpath("//*[text()='{}']".format('Good Deal'))
+            great_deal = driver.find_element_by_xpath("//*[text()='{}']".format('Great Deal'))
+            good_deal.click()
+            great_deal.click()
+        except Exception:
+            print("No good deals found")
     if deal == "great":
-        great_deal = driver.find_element_by_xpath("//*[text()='{}']".format('Great Deal'))
-        great_deal.click
+        try:
+            great_deal = driver.find_element_by_xpath("//*[text()='{}']".format('Great Deal'))
+            great_deal.click
+        except Exception:
+            print("No great deals found")
 
 
 # pull out mileage from element
@@ -268,6 +276,8 @@ def details_tab(driver):
 def hide_delivery(driver):
     button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
     div._3K15rt > div:nth-child(2) > fieldset:nth-child(5) > label > p', driver)
+    # cargurus changed the way they show delivery 
+    button_click("xpath", "//*[text()='{}']".format("Nearby listings"), driver)
 
 
 # select the year range

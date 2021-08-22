@@ -65,6 +65,7 @@ def carfax_login(driver):
 
 def populate_carfax_info(cars, driver):
     for car in cars:
+        print("Car number: {}\n    VIN: {}".format(cars.index(car) + 1, car[8]))
         # mock
         if not Path(const.creds).is_file():
             results = carfax_mock()

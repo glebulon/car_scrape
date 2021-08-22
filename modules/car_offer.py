@@ -327,10 +327,12 @@ def confirm_trims(driver, make_model=""):
 def check_if_entered(driver):
     string = 'Sorry. This vehicle cannot be submitted because an offer has been received and pending a response.'
     try:
-        WebDriverWait(driver, 30).until(ec.presence_of_element_located((By.XPATH, "//*[text()='{}']".format(string))))
-        entered_already = True
-    except Exception:
+        # WebDriverWait(driver, 15).until(ec.presence_of_element_located((By.XPATH, "//*[text()='{}']".format(string))))
+        # instead of waiting for the text that a car is intered it's faster to wait for the style box, faster overall
+        WebDriverWait(driver, 15).until(ec.presence_of_element_located((By.XPATH, "//*[text()='{}']".format("STYLE"))))
         entered_already = None
+    except Exception:
+        entered_already = True
         pass
     return entered_already
 
