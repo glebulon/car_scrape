@@ -22,6 +22,8 @@ def car_details(url, href, driver):
     try:
         # wait for details to load
         WebDriverWait(driver, timeout).until(ec.visibility_of_element_located((By.CLASS_NAME, "_5PSqaB")))
+        # close banner if it's there
+        banner_close(driver)
         # click the details tab
         details_tab(driver)
     except TimeoutException:
@@ -194,6 +196,9 @@ def wait_to_load(driver):
     WebDriverWait(driver, 10).until(ec.visibility_of_element_located((By.CLASS_NAME, "_3K15rt")))
     time.sleep(3)
 
+def wait_for_listing(driver):
+    WebDriverWait(driver, 15).until(ec.visibility_of_element_located((By.CLASS_NAME, "_3LnDeD")))
+    time.sleep(3)
 
 def next_page(driver, first=True):
     if first:
@@ -206,8 +211,17 @@ def next_page(driver, first=True):
 
 # unclick the checkbox that shows cars with no price
 def remove_no_price(driver):
-    driver.find_element_by_xpath("//*[text()='{}']".format('Include Listings Without Available Pricing')).click()
+    try:
+        driver.find_element_by_xpath("//*[text()='{}']".format('Include Listings Without Available Pricing')).click()
+    except Exception:
+        print("Couldn't unclick cars with no price")
 
+# close the stupid popup
+def banner_close(driver):
+    try:
+        driver.find_element_by_xpath("//*[text()='{}']".format('No thanks')).click()
+    except Exception:
+        pass
 
 # press the clear button for CPO/used/new
 def remove_cpo(driver):
@@ -241,6 +255,8 @@ def get_mileage(element):
     for i in element.find_all('p'):
         if re.search(r" mi$", str(i.contents[0])):
             mileage = int(str(i.contents[0]).strip(' mi').replace(',', ''))
+    # if mileage == 0:
+    #     no_mileage = ""
     return mileage
 
 
@@ -282,12 +298,18 @@ def hide_delivery(driver):
 
 # select the year range
 def year_range(start, end, driver):
-    driver.find_element_by_name("selectedStartYear").click()
-    Select(driver.find_element_by_name("selectedStartYear")).select_by_visible_text(str(start))
-    driver.find_element_by_name("selectedStartYear").click()
-    driver.find_element_by_name("selectedEndYear").click()
-    Select(driver.find_element_by_name("selectedEndYear")).select_by_visible_text(str(end))
-    driver.find_element_by_name("selectedEndYear").click()
+    try:
+        driver.find_element_by_name("selectedStartYear").click()
+        Select(driver.find_element_by_name("selectedStartYear")).select_by_visible_text(str(start))
+        driver.find_element_by_name("selectedStartYear").click()
+    except Exception:
+        print("Couldn't find the start year")
+    try:
+        driver.find_element_by_name("selectedEndYear").click()
+        Select(driver.find_element_by_name("selectedEndYear")).select_by_visible_text(str(end))
+        driver.find_element_by_name("selectedEndYear").click()
+    except Exception:
+        print("Couldn't find the end year")
     driver.find_element_by_xpath("(//button[@type='submit'])[2]").click()
 
 
@@ -295,16 +317,41 @@ def year_range(start, end, driver):
 def remove_auth_del_spon(raw_elements, mileage):
     # move to a new list all elements that do NOT contain:
     # Sponsored, Authorized.*Dealer, are not not empty and if mileage is provided filter on mileage
-    elements = [x for x in raw_elements if (
-                not re.search('Sponsored', x.text))
-                and (not re.search('store transfer', x.text))
-                and (not re.search('Authorized.*Dealer', x.text))
-                and (x.select('#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > \
-                    div._5K96zi._3QziWR > div._3LnDeD > div:nth-child(6) > div > a > div._4yP575._2PDkfp > div > \
-                    div._37Fr4g > div > svg') == [])
-                and (x.text.lower() != '') and (get_mileage(x) != 0)
-                and ((not mileage) or (get_mileage(x) < mileage))
-                ]
+    
+    # elements = [x for x in raw_elements if (
+    #             not re.search('Sponsored', x.text))
+    #             and (not re.search('store transfer', x.text))
+    #             and (not re.search('Authorized.*Dealer', x.text))
+    #             and (x.select('#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > \
+    #                 div._5K96zi._3QziWR > div._3LnDeD > div:nth-child(6) > div > a > div._4yP575._2PDkfp > div > \
+    #                 div._37Fr4g > div > svg') == [])
+    #             and (x.text.lower() != '') and (get_mileage(x) != 0)
+    #             and ((not mileage) or (get_mileage(x) < mileage))
+    #             ]
+
+    elements = []
+    for x in raw_elements:
+        sponsored = re.search('Sponsored', x.text)
+        transfer = re.search('store transfer', x.text)
+        authorized = re.search('Authorized.*Dealer', x.text)
+        not_sure = (x.select('#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > \
+                   div._5K96zi._3QziWR > div._3LnDeD > div:nth-child(6) > div > a > div._4yP575._2PDkfp > div > \
+                   div._37Fr4g > div > svg') == [])
+        has_miles = (x.text.lower() != '') and (get_mileage(x) != 0)
+        less_miles_than_desired = ((not mileage) or (get_mileage(x) < mileage))
+        if (not sponsored) and (not transfer) and (not authorized) and (not_sure) and (has_miles) and \
+                                                                                (less_miles_than_desired):
+            elements.append(x)
+        else:
+            print("removed car")
+            print("sponsored: {}".format(sponsored))
+            print("transfer: {}".format(transfer))
+            print("authorized: {}".format(authorized))
+            print("not_sure: {}".format(not_sure))
+            print("has_miles: {}".format(has_miles))
+            print("miles: {}".format(get_mileage(x)))
+            print("less_miles_than_desired: {}".format(less_miles_than_desired))
+            print("*" * 30)
     return elements
 
 
@@ -340,12 +387,10 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
     driver.get(url)
     # wait to load
     wait_to_load(driver)
+    wait_for_listing(driver)
     # select years if provided
-    try:
-        if (start or end) and model:
-            year_range(start, end, driver)
-    except Exception:
-        print(traceback.format_exc())
+    if (start or end) and model:
+        year_range(start, end, driver)
     # select deal if option passed
     if deal_quality:
         good_price_only(driver, deal_quality)
@@ -361,10 +406,14 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
     # get all possible trims of a given car
     trims = get_trims(driver)
     colors = get_colors(driver)
+    wait_to_load(driver)
+    wait_for_listing(driver)
     # get all cars on the page
     raw_elements = load_page(driver)
+    print("Before filtering: {}".format(len(raw_elements)))
     # filter out all cars that are sponsored and are above mileage threshold
     elements = remove_auth_del_spon(raw_elements, mileage)
+    print("After filtering: {}".format(len(elements)))
     # create a list of all cars from every page, then get details from all of them
     all_elements = elements
 
@@ -375,9 +424,13 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
         else:
             next_page(driver, first=False)
         page += 1
-        logging.critical("Fetching more cars")
+        wait_to_load(driver)
+        wait_for_listing(driver)
+        print("Fetching more cars")
         raw_elements = load_page(driver)
+        print("Before filtering: {}".format(len(raw_elements)))
         elements = remove_auth_del_spon(raw_elements, mileage)
+        print("After filtering: {}".format(len(elements)))
         for element in elements:
             all_elements.append(element)
 
@@ -392,11 +445,12 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
         cars.append(x)
 
     # remove duplicate entries, not sure why they are there
+    print("Before deduping: {}".format(len(cars)))
     deduped_cars = []
     for car in cars:
         if car not in deduped_cars:
             deduped_cars.append(car)
-
+    print("After deduping: {}".format(len(deduped_cars)))
     # add trim if it exists for every car
     for car in deduped_cars:
         trim = [x for x in car[1].split() if x in trims]

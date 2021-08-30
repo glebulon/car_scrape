@@ -71,7 +71,7 @@ def select_color(driver, color):
     color = color or ["Black"]
     # pick the color
     selector.click()
-    # might need to fogure this out
+    # might need to figure this out
     WebDriverWait(driver, 60).until(ec.element_to_be_clickable((By.XPATH, '//*[text()="{}"]'.format(color[0]))))
     selector.find_element_by_xpath("//*[text()='{}']".format(color[0])).click()
 
@@ -116,7 +116,13 @@ def enter_vin(driver, vin):
     driver.find_element(By.CSS_SELECTOR, ".ant-input-lg").clear()
     driver.find_element(By.CSS_SELECTOR, ".ant-input-lg").send_keys(vin)
     driver.find_element(By.CSS_SELECTOR, ".goButton___wC2QZ").click()
-
+    # check for errors, if errors throw an exception
+    errors_list = ["Unable to process the request. This vehicle has an unsupported country of origin.",
+                   "This vehicle is ineligible. Pleas try another VIN."]
+    for i in errors_list:
+        if driver.find_elements_by_xpath("//*[text()='{}']".format(i)):
+            print("Can't get a price on this car: {}".format(vin))
+            raise Exception('error')
 
 def enter_mileage(driver, mileage):
     WebDriverWait(driver, 60).until(ec.visibility_of_element_located((By.ID, "tradeGradeMileage")))
@@ -209,13 +215,27 @@ def get_price(driver, vin):
                 div.filtersSearchAndSelect___1Hz9D > div:nth-child(1) > i > svg').click()
     except Exception:
         pass
+    # tracking var
+    got_price = False
     try:
         selector = "div.offerAmount___ooWOd.highlighted___2pqMl"
         WebDriverWait(driver, 60).until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
         price = driver.find_element_by_css_selector(selector).text
+        got_price = True
     except Exception:
         price = "FAIL"
         pass
+    # if there is no price try a different selector
+    if not got_price:
+        try:
+            selector = "div.offerAmount___ooWOd"
+            WebDriverWait(driver, 60).until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
+            price = driver.find_element_by_css_selector(selector).text
+        except Exception:
+            price = "FAIL"
+            pass
+    if price == "FAIL":
+        driver.save_screenshot("screenshots/caroffer/{}.png".format(vin))
     return price
 
 # if no engine is selected pick one
@@ -275,6 +295,8 @@ def select_style(driver, make_model=""):
         style.click()
         tags = style.find_elements_by_xpath("//*/ul/li/*")
         trims = [x for x in tags if x.tag_name == "span"]
+        # if matches set this to true
+        match = False
         # compare text in each trim versus text in make_model, if matches click
         for i in trims:
             # split each section on space and convert to lowercase
@@ -286,7 +308,11 @@ def select_style(driver, make_model=""):
             if not set(trim).isdisjoint(model):
                 # if same the click
                 i.click()
+                match = True
                 break
+        # if no matches, select the last one
+        if not match:
+            trims[-1].click()
 
 
 def confirm_trims(driver, make_model=""):
@@ -347,9 +373,15 @@ def get_offer(driver, cars):
     if login_creds():
         # log in first
         login(driver)
+        car_number = 1
         for car in cars:
             try:
                 details = get_car_info(car)
+                print("Car number: {}".format(car_number))
+                print("    VIN: {}".format(details['vin']))
+                car_number += 1
+                
+                driver.refresh()
                 enter_vin(driver, details['vin'])
                 # do this if the car wasn't entered already
                 if not check_if_entered(driver):
@@ -371,11 +403,11 @@ def get_offer(driver, cars):
                 car.append(get_price(driver, details['vin']))
             except Exception:
                 print(traceback.format_exc())
-                driver.save_screenshot("screenshots/caroffer/{}.png".format(details['vin']))
+                driver.save_screenshot("screenshots/caroffer/{}.png".format(car[8]))
                 car.append("FAIL")
                 driver.refresh()
                 continue
-        else:
-            for car in cars:
-                car.append("No Creds")
+    else:
+        for car in cars:
+            car.append("No Creds")
     return cars

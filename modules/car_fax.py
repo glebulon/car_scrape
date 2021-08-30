@@ -29,12 +29,21 @@ def carfax_viewer(vin, driver):
     soup = BeautifulSoup(driver.page_source, "lxml")
     # get the columns we need
     sources = soup.find_all(class_="source-line")
-    fuel = soup.select('#headerFuel')[0].contents[0].strip() if soup.select('#headerFuel')[0].contents[0].strip() \
-        else ''
-    engine = soup.select('#headerEngineInfo')[0].contents[0].strip() if soup.select('#headerFuel')[0].contents[0].\
-        strip() else ''
-    drive = soup.select('#headerDriveline')[0].contents[0].strip() if soup.select('#headerDriveline')[0].contents[0].\
-        strip() else ''
+    try:
+        fuel = soup.select('#headerFuel')[0].contents[0].strip() if soup.select('#headerFuel')[0].contents[0].strip() \
+            else ''
+    except Exception:
+        fuel = ''
+    try:
+        engine = soup.select('#headerEngineInfo')[0].contents[0].strip() if soup.select('#headerFuel')[0].contents[0].\
+            strip() else ''
+    except Exception:
+        engine = ''
+    try:
+        drive = soup.select('#headerDriveline')[0].contents[0].strip() if soup.select('#headerDriveline')[0].contents[0].\
+            strip() else ''
+    except Exception:
+        drive = ''
     # find all occurences of damage
     damage = 0
     for i in sources:
