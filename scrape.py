@@ -21,7 +21,7 @@ for search in searches:
     # date stamp to use in report name
     date_stamp = time.strftime('%Y-%m-%d--%I-%M-%p')
     file_prefix = misc.get_prefix(search).replace(' ', '-')
-    file_name = date_stamp if not file_prefix else date_stamp + '-' + file_prefix + '-' + misc.gen_unique()
+    file_name = date_stamp if not file_prefix else date_stamp + '-' + file_prefix
     logging.critical("Start: " + file_name)
     logging.critical(search)
     # run search
@@ -35,8 +35,13 @@ for search in searches:
     # populate the carfax history
     cars = cfax.populate_carfax_info(cars, driver)
     print("Finished carfax, starting car_offer")
-    # get a car offer offer
-    cars = coffer.get_offer(driver, cars)
+    # enter the car details into car_offer
+    coffer.enter_car(driver, cars)
+    # # sleep in between entering details and getting prices
+    # print("Before sleep:" + time.strftime('%I-%M-%S-%p'))
+    # time.sleep(3600 / int(len(searches)))
+    # print("After sleep:" + time.strftime('%I-%M-%S-%p'))
+    cars = coffer.get_car_price(driver, cars)
     # write to csv file
     csv.write_to_csv(header="yes", payload=cars, file_name=file_name)
     logging.critical("Cars found: {}".format(len(cars)))

@@ -292,7 +292,7 @@ def details_tab(driver):
 def hide_delivery(driver):
     button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
     div._3K15rt > div:nth-child(2) > fieldset:nth-child(5) > label > p', driver)
-    # cargurus changed the way they show delivery 
+    # cargurus changed the way they show delivery
     button_click("xpath", "//*[text()='{}']".format("Nearby listings"), driver)
 
 
@@ -317,7 +317,7 @@ def year_range(start, end, driver):
 def remove_auth_del_spon(raw_elements, mileage):
     # move to a new list all elements that do NOT contain:
     # Sponsored, Authorized.*Dealer, are not not empty and if mileage is provided filter on mileage
-    
+
     # elements = [x for x in raw_elements if (
     #             not re.search('Sponsored', x.text))
     #             and (not re.search('store transfer', x.text))
@@ -340,7 +340,7 @@ def remove_auth_del_spon(raw_elements, mileage):
         has_miles = (x.text.lower() != '') and (get_mileage(x) != 0)
         less_miles_than_desired = ((not mileage) or (get_mileage(x) < mileage))
         if (not sponsored) and (not transfer) and (not authorized) and (not_sure) and (has_miles) and \
-                                                                                (less_miles_than_desired):
+           (less_miles_than_desired):
             elements.append(x)
         else:
             print("removed car")

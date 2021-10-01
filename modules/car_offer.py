@@ -186,15 +186,17 @@ def get_offer_button(driver):
     try:
         driver.find_element_by_xpath('/html/body/div[6]/div/div/div/div/div[2]/div/div[1]/div[3]/div[2]/button').\
             click()
+        time.sleep(3)
     except Exception:
         buttons = driver.find_elements_by_xpath('//*/button')
         for button in buttons:
             if "Get Offer" in button.text:
-                button.click
+                button.click()
+        time.sleep(3)
         pass
 
 
-def get_price(driver, vin):
+def get_price(driver, vin, make_model):
     # close the offer dialog
     try:
         driver.find_element_by_class_name('ant-drawer-close').click()
@@ -207,35 +209,44 @@ def get_price(driver, vin):
     # clear text from field
     driver.find_element_by_css_selector(selector).clear()
     driver.find_element_by_css_selector(selector).send_keys(vin)
-    try:
-        # refresh trades
-        driver.find_element_by_css_selector('#content > div > div > div > \
-        div.ant-tabs-content.ant-tabs-content-animated.ant-tabs-top-content > \
-            div.ant-tabs-tabpane.ant-tabs-tabpane-active > div:nth-child(2) > div.offers___1mOSX > div:nth-child(3) > \
-                div.filtersSearchAndSelect___1Hz9D > div:nth-child(1) > i > svg').click()
-    except Exception:
-        pass
-    # tracking var
-    got_price = False
-    try:
-        selector = "div.offerAmount___ooWOd.highlighted___2pqMl"
-        WebDriverWait(driver, 60).until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
-        price = driver.find_element_by_css_selector(selector).text
-        got_price = True
-    except Exception:
-        price = "FAIL"
-        pass
-    # if there is no price try a different selector
-    if not got_price:
+    attempt = 1
+    while attempt < 5:
         try:
-            selector = "div.offerAmount___ooWOd"
-            WebDriverWait(driver, 60).until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
+            # refresh trades
+            driver.find_element_by_css_selector('#content > div > div > div > \
+            div.ant-tabs-content.ant-tabs-content-animated.ant-tabs-top-content > \
+                div.ant-tabs-tabpane.ant-tabs-tabpane-active > div:nth-child(2) > div.offers___1mOSX > \
+                    div:nth-child(3)  > div.filtersSearchAndSelect___1Hz9D > div:nth-child(1) > i > svg').click()
+        except Exception:
+            pass
+        # tracking var
+        got_price = False
+        try:
+            selector = "div.offerAmount___ooWOd.highlighted___2pqMl"
+            WebDriverWait(driver, 20).until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
             price = driver.find_element_by_css_selector(selector).text
+            got_price = True
         except Exception:
             price = "FAIL"
             pass
+        # if there is no price try a different selector
+        if not got_price:
+            try:
+                selector = "div.offerAmount___ooWOd"
+                WebDriverWait(driver, 20).until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
+                price = driver.find_element_by_css_selector(selector).text
+            except Exception:
+                price = "FAIL"
+                pass
+        # if we got a price break the while loop
+        if price != "FAIL":
+            break
+        attempt = attempt + 1
+        time.sleep(20)
+    # if we got nothing in the end scroll to bottom, take a screenshot
     if price == "FAIL":
-        driver.save_screenshot("screenshots/caroffer/{}.png".format(vin))
+        driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+        driver.save_screenshot("screenshots/caroffer/get_price-{}-{}.png".format(make_model, vin))
     return price
 
 # if no engine is selected pick one
@@ -368,7 +379,8 @@ def mileage_is_correct(driver):
     except Exception:
         pass
 
-def get_offer(driver, cars):
+# enter the details of the cars
+def enter_car(driver, cars):
     # only do all of this if creds are found
     if login_creds():
         # log in first
@@ -377,10 +389,9 @@ def get_offer(driver, cars):
         for car in cars:
             try:
                 details = get_car_info(car)
-                print("Car number: {}".format(car_number))
+                print("Entering Car number: {}".format(car_number))
                 print("    VIN: {}".format(details['vin']))
                 car_number += 1
-                
                 driver.refresh()
                 enter_vin(driver, details['vin'])
                 # do this if the car wasn't entered already
@@ -400,14 +411,24 @@ def get_offer(driver, cars):
                     certified_no(driver)
                     select_accidents(driver, details['accidents'])
                     get_offer_button(driver)
-                car.append(get_price(driver, details['vin']))
             except Exception:
                 print(traceback.format_exc())
-                driver.save_screenshot("screenshots/caroffer/{}.png".format(car[8]))
-                car.append("FAIL")
+                driver.save_screenshot("screenshots/caroffer/enter_details-{}-{}.png".format(car[1], car[8]))
                 driver.refresh()
                 continue
     else:
         for car in cars:
             car.append("No Creds")
+
+# get prices of the cars
+def get_car_price(driver, cars):
+    # only lookup cars after all have been entered, gives their server some more time
+    # might result in less no result searches
+    car_number = 1
+    for car in cars:
+        details = get_car_info(car)
+        print("Getting offer for Car number: {}".format(car_number))
+        print("    VIN: {}".format(details['vin']))
+        car.append(get_price(driver, details['vin'], details['make_model']))
+        car_number += 1
     return cars
