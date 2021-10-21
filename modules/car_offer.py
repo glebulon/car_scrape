@@ -100,7 +100,7 @@ def get_car_info(car):
         traceback.print_exception(exc_type, exc_value, exc_tb)
     return details
 
-def enter_vin(driver, vin):
+def enter_vin(driver, vin, failed_vin):
     try:
         cn = 'vehicleGetButton___1sNi8'
         # check that the button is there
@@ -116,13 +116,21 @@ def enter_vin(driver, vin):
     driver.find_element(By.CSS_SELECTOR, ".ant-input-lg").clear()
     driver.find_element(By.CSS_SELECTOR, ".ant-input-lg").send_keys(vin)
     driver.find_element(By.CSS_SELECTOR, ".goButton___wC2QZ").click()
-    # check for errors, if errors throw an exception
-    errors_list = ["Unable to process the request. This vehicle has an unsupported country of origin.",
-                   "This vehicle is ineligible. Pleas try another VIN."]
-    for i in errors_list:
-        if driver.find_elements_by_xpath("//*[text()='{}']".format(i)):
-            print("Can't get a price on this car: {}".format(vin))
-            raise Exception('error')
+
+    # wait to see if the next screen loaded
+    selector = "#optionsCard > div:nth-child(1) > div > div > div"
+    try:
+        WebDriverWait(driver, 10).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+    except Exception:
+        # check for errors, if errors add to the list
+        errors_list = ["Unable to process the request. This vehicle has an unsupported country of origin.",
+                       "This vehicle is ineligible. Pleas try another VIN."]
+        for i in errors_list:
+            if driver.find_elements_by_xpath("//*[text()='{}']".format(i)):
+                print("Can't get a price on this car: {}".format(vin))
+                # if we can't enter the vin then add the vin and the text to dictionary
+                failed_vin[vin] = i
+    return failed_vin
 
 def enter_mileage(driver, mileage):
     WebDriverWait(driver, 60).until(ec.visibility_of_element_located((By.ID, "tradeGradeMileage")))
@@ -386,6 +394,8 @@ def enter_car(driver, cars):
         # log in first
         login(driver)
         car_number = 1
+        # create an array to store vin numbers of cars that cannot be entered
+        failed_vin = {}
         for car in cars:
             try:
                 details = get_car_info(car)
@@ -393,9 +403,10 @@ def enter_car(driver, cars):
                 print("    VIN: {}".format(details['vin']))
                 car_number += 1
                 driver.refresh()
-                enter_vin(driver, details['vin'])
+                # set the dict to what we passed in plus possibly the current car
+                failed_vin = enter_vin(driver, details['vin'], failed_vin)
                 # do this if the car wasn't entered already
-                if not check_if_entered(driver):
+                if ((details['vin'] not in failed_vin) and (not check_if_entered(driver))):
                     select_style(driver, details['make_model'])
                     enter_mileage(driver, details['mileage'])
                     select_color(driver, details['color'])
@@ -411,17 +422,22 @@ def enter_car(driver, cars):
                     certified_no(driver)
                     select_accidents(driver, details['accidents'])
                     get_offer_button(driver)
+                # raise exception if the vin is in the list
+                elif details['vin'] in failed_vin:
+                    raise Exception
             except Exception:
                 print(traceback.format_exc())
                 driver.save_screenshot("screenshots/caroffer/enter_details-{}-{}.png".format(car[1], car[8]))
                 driver.refresh()
                 continue
+        # return the list back to scrape.py
+        return failed_vin
     else:
         for car in cars:
             car.append("No Creds")
 
 # get prices of the cars
-def get_car_price(driver, cars):
+def get_car_price(driver, cars, failed_vin):
     # only lookup cars after all have been entered, gives their server some more time
     # might result in less no result searches
     car_number = 1
@@ -429,6 +445,9 @@ def get_car_price(driver, cars):
         details = get_car_info(car)
         print("Getting offer for Car number: {}".format(car_number))
         print("    VIN: {}".format(details['vin']))
-        car.append(get_price(driver, details['vin'], details['make_model']))
+        if details['vin'] not in failed_vin:
+            car.append(get_price(driver, details['vin'], details['make_model']))
+        else:
+            car.append(failed_vin[details['vin']])
         car_number += 1
     return cars

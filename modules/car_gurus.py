@@ -233,6 +233,16 @@ def remove_cpo(driver):
 
 # select good priced car only
 def good_price_only(driver, deal):
+    if deal == "fair":
+        try:
+            fair_deal = driver.find_element_by_xpath("//*[text()='{}']".format('Fair Deal'))
+            good_deal = driver.find_element_by_xpath("//*[text()='{}']".format('Good Deal'))
+            great_deal = driver.find_element_by_xpath("//*[text()='{}']".format('Great Deal'))
+            fair_deal.click()
+            good_deal.click()
+            great_deal.click()
+        except Exception:
+            print("No fair deals found")
     if deal == "good":
         try:
             good_deal = driver.find_element_by_xpath("//*[text()='{}']".format('Good Deal'))
@@ -357,7 +367,11 @@ def remove_auth_del_spon(raw_elements, mileage):
 
 # this is the main function, the entry point to the other ones for cargurus
 def cars(driver, model="", make="", zip="02062", distance="3", number_of_listings=0, deal_quality="",
-         start="", end="", mileage=""):
+         start="", end="", mileage="", dealer_url=""):
+
+    # this is supplied for a specific dealer
+    if dealer_url:
+        url = dealer_url
 
     # build cargurus url
     if model:
@@ -378,7 +392,7 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
             &showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE&\
                 entitySelectingHelper.selectedEntity={2}'".format(zip, distance, make_code)
 
-    if not make and not model:
+    if not make and not model and not dealer_url:
         url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}\
             &showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE"\
                 .format(zip, distance)
@@ -389,17 +403,18 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
     wait_to_load(driver)
     wait_for_listing(driver)
     # select years if provided
-    if (start or end) and model:
-        year_range(start, end, driver)
-    # select deal if option passed
-    if deal_quality:
-        good_price_only(driver, deal_quality)
-    # uncheck cars with no price, don't want those
-    remove_no_price(driver)
-    # remove CPO only cars
-    remove_cpo(driver)
-    # remove delivery cars
-    hide_delivery(driver)
+    if not dealer_url:
+        if (start or end) and model:
+            year_range(start, end, driver)
+        # select deal if option passed
+        if deal_quality:
+            good_price_only(driver, deal_quality)
+        # uncheck cars with no price, don't want those
+        remove_no_price(driver)
+        # remove CPO only cars
+        remove_cpo(driver)
+        # remove delivery cars
+        hide_delivery(driver)
     # create a list of cars
     cars = []
     page = 1
@@ -410,14 +425,19 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
     wait_for_listing(driver)
     # get all cars on the page
     raw_elements = load_page(driver)
-    print("Before filtering: {}".format(len(raw_elements)))
-    # filter out all cars that are sponsored and are above mileage threshold
-    elements = remove_auth_del_spon(raw_elements, mileage)
-    print("After filtering: {}".format(len(elements)))
-    # create a list of all cars from every page, then get details from all of them
-    all_elements = elements
+    if not dealer_url:
+        print("Before filtering: {}".format(len(raw_elements)))
+        # filter out all cars that are sponsored and are above mileage threshold
+        elements = remove_auth_del_spon(raw_elements, mileage)
+        print("After filtering: {}".format(len(elements)))
+        # create a list of all cars from every page, then get details from all of them
+        all_elements = elements
+    else:
+        all_elements = raw_elements
 
-    while (len(all_elements) < number_of_listings) and (number_of_listings != 0) and next_page_exists(driver):
+    # if either number of listing desired is zero(all of them) or if we got less than we need
+    # and if next page exists
+    while ((len(all_elements) < number_of_listings) or (number_of_listings == 0)) and next_page_exists(driver):
         # go to next page, different locators if page 1 or not
         if page == 1:
             next_page(driver, first=True)
@@ -428,14 +448,17 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
         wait_for_listing(driver)
         print("Fetching more cars")
         raw_elements = load_page(driver)
-        print("Before filtering: {}".format(len(raw_elements)))
-        elements = remove_auth_del_spon(raw_elements, mileage)
-        print("After filtering: {}".format(len(elements)))
+        if not dealer_url:
+            print("Before filtering: {}".format(len(raw_elements)))
+            elements = remove_auth_del_spon(raw_elements, mileage)
+            print("After filtering: {}".format(len(elements)))
+        else:
+            elements = raw_elements
         for element in elements:
             all_elements.append(element)
 
     # remove all elements that are higher in number than requested number of cars
-    if len(all_elements) > number_of_listings:
+    if (len(all_elements) > number_of_listings) and (number_of_listings != 0):
         all_elements = all_elements[0:number_of_listings]
 
     # find hrefs and get details of all cars

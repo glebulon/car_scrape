@@ -6,9 +6,21 @@ import uuid
 
 # read in search
 def search_settings_read():
-    with open('settings/searches.json') as f:
-        return(json.load(f))
+    try:
+        with open('settings/searches.json') as f:
+            return(json.load(f))
+    except Exception:
+        return None
 
+# read in dealer searches
+def search_dealer_read():
+    try:
+        with open('settings/dealer_search.txt') as f:
+            lines = f.readlines()
+            lines = [line.rstrip() for line in lines]
+            return(lines)
+    except Exception:
+        return None
 
 # generate a uuid and trim it
 def gen_unique():
@@ -97,6 +109,13 @@ def get_prefix(search):
     else:
         prefix = "all"
     return(prefix)
+
+def get_dealer_name(search):
+    try:
+        prefix = search.strip('https://www.cargurus.com/Cars/m-')
+    except Exception:
+        prefix = None
+    return prefix
 
 def check_get_key(dict, key):
     if key in dict.keys():
