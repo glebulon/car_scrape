@@ -425,15 +425,15 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
     wait_for_listing(driver)
     # get all cars on the page
     raw_elements = load_page(driver)
+    print("Before filtering: {}".format(len(raw_elements)))
     if not dealer_url:
-        print("Before filtering: {}".format(len(raw_elements)))
         # filter out all cars that are sponsored and are above mileage threshold
         elements = remove_auth_del_spon(raw_elements, mileage)
-        print("After filtering: {}".format(len(elements)))
         # create a list of all cars from every page, then get details from all of them
         all_elements = elements
     else:
         all_elements = raw_elements
+    print("After filtering: {}".format(len(all_elements)))
 
     # if either number of listing desired is zero(all of them) or if we got less than we need
     # and if next page exists
@@ -448,12 +448,12 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
         wait_for_listing(driver)
         print("Fetching more cars")
         raw_elements = load_page(driver)
+        print("Before filtering: {}".format(len(raw_elements)))
         if not dealer_url:
-            print("Before filtering: {}".format(len(raw_elements)))
             elements = remove_auth_del_spon(raw_elements, mileage)
-            print("After filtering: {}".format(len(elements)))
         else:
             elements = raw_elements
+        print("After filtering: {}".format(len(elements)))
         for element in elements:
             all_elements.append(element)
 
