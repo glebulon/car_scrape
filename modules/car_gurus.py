@@ -21,7 +21,8 @@ def car_details(url, href, driver):
     timeout = 60
     try:
         # wait for details to load
-        WebDriverWait(driver, timeout).until(ec.visibility_of_element_located((By.CLASS_NAME, "_5PSqaB")))
+        WebDriverWait(driver, timeout).until(ec.visibility_of_element_located((By.CLASS_NAME, "_mEDnu")))
+        WebDriverWait(driver, timeout).until(ec.visibility_of_element_located((By.CLASS_NAME, "v8gU2_")))
         # close banner if it's there
         banner_close(driver)
         # click the details tab
@@ -37,15 +38,15 @@ def car_details(url, href, driver):
         # leather, navigation, car link, dealer info, dealership town, distance from zip, days on cargurus, accidents,
         # from cargurus, title from cargurus, price vs market ]
         current_car_info = []
-        year_make_model = current_car_soup.find_all(class_="_2Nz9KW")[0].text
+        year_make_model = current_car_soup.find_all(class_="tOvI3U")[0].text
         # add year
         current_car_info.append(year_make_model[:4])
         # add make/model
         make_model = year_make_model[5:].split(' - ')[0]
         current_car_info.append(make_model)
         # get all info available
-        values = current_car_soup.find_all(class_="_5grpKY")
-        fields = current_car_soup.find_all(class_="aHpS63")
+        values = current_car_soup.find_all(class_="tSbcGe")
+        fields = current_car_soup.find_all(class_="wv1MO3")
         element = 0
         details = {}
         for i in fields:
@@ -58,78 +59,74 @@ def car_details(url, href, driver):
         for e in elements_list:
             current_car_info.append(m.check_get_key(details, e))
 
-        # get the major options of the car
-        major_options = current_car_soup.find("dl", {"class": "_249mSX"})
         # moon/sun
         moon = "no"
-        for i in major_options.contents:
-            if "moonroof" in i.text.lower() or "sunroof" in i.text.lower():
-                moon = "yes"
+        if ("moonroof" in details['Major Options'].lower()) or ("sunroof" in details['Major Options'].lower()):
+            moon = "yes"
         current_car_info.append(moon)
         # leather seats
         leather = "no"
-        for i in major_options.contents:
-            if "leather" in i.text.lower():
-                leather = "yes"
+        if "leather" in details['Major Options'].lower():
+            leather = "yes"
         current_car_info.append(leather)
         # navigation
         navigation = "no"
-        for i in major_options.contents:
-            if "navigation" in i.text.lower():
-                navigation = "yes"
+        if "navigation" in details['Major Options'].lower():
+            navigation = "yes"
         current_car_info.append(navigation)
         # add car link
         current_car_info.append("".join((url + href).split()))
         # dealer info
-        dealer_info = current_car_soup.select('#cargurus-listing-search > div:nth-child(1) > div._36TanG > \
-        div._24ffzL > div._5jSLnT > section._2WWLMX._5PSqaB')
         try:
-            dealer_info = [x.text for x in dealer_info[0].contents]
-            dealer_info = "::".join(dealer_info)
+            dealer_info = current_car_soup.find("section", {"class": "_ruC5I _mEDnu"}).contents[0].text
         except Exception as e:
             dealer_info = "-"
         current_car_info.append(dealer_info)
         # dealer phone number
         try:
-            phone = current_car_soup.find("div", {"class": "_3fXy3w"}).contents[0]
+            phone = current_car_soup.find("a", {"class": "wHoz5o"})['href'].strip('tel:')
         except Exception as e:
-            phone = "-"
+            try:
+                phone = current_car_soup.find_all(class_="_68Dk5")[0].text
+            except Exception as e:
+                phone = "-"
         current_car_info.append(phone)
         # leaving blank, vic wants the manager's name
         name = "-"
         current_car_info.append(name)
         try:
             # distance from zipcode
-            distance_town = current_car_soup.find_all(class_="_3CFFR5")[0].text
+            distance_town = current_car_soup.find_all(class_="obQcJn")[0].text
+            # town
             current_car_info.append(distance_town.split("·")[0].strip())
         except Exception as e:
             current_car_info.append("-")
         try:
+            # distance
             current_car_info.append(distance_town.split("·")[1].strip())
         except Exception as e:
             current_car_info.append("-")
         # days on cargurus
         try:
-            current_car_info.append(current_car_soup.select('#cargurus-listing-search > div:nth-child(1) > \
-                div._36TanG > div._24ffzL > div._5jSLnT > div._2Bszua._5PSqaB > div._5j5D2G > div:nth-child(1) > \
-                div._5kdMnf > div:nth-child(2) > strong')[0].text)
+            days = current_car_soup.find_all(class_="ksX2ni")[0].text
+            if "days" not in days:
+                days = current_car_soup.find_all(class_="BiX5ju")[0].text
+            current_car_info.append(days)
         except Exception as e:
-            current_car_info.append(current_car_soup.select('#cargurus-listing-search > div:nth-child(1) > \
-            div._36TanG > div._24ffzL > div._5jSLnT > div._2Bszua._5PSqaB > div._5j5D2G > div:nth-child(1) > \
-                div._5kdMnf > div._5XcXHD > strong')[0].text)
+            current_car_info.append("-")
         # accidents from cargurus
         try:
-            current_car_info.append(current_car_soup.find_all(class_="_5gudF3")[1].text)
+            current_car_info.append(current_car_soup.find_all(class_="XMMcff")[1].text.strip("Accident Check").
+                                    strip(" repor"))
             # title issues
-            current_car_info.append(current_car_soup.find_all(class_="_5gudF3")[0].text)
+            current_car_info.append(current_car_soup.find_all(class_="XMMcff")[0].text.strip("Title Check"))
         except Exception:
             current_car_info.append("-")
             current_car_info.append("-")
         # price versus market
         # store the element
         try:
-            price_anal = current_car_soup.select("#cargurus-listing-search > div:nth-child(1) > div._36TanG > \
-            div._24ffzL > div._3Wnbei > section > div > div > section._2Xfg8g")[0]
+            price_anal = current_car_soup.find(class_="fJS7pW").contents
         except Exception as e:
             print("url: {}".format(url + href))
             print(e)
@@ -137,9 +134,9 @@ def car_details(url, href, driver):
             traceback.print_exception(exc_type, exc_value, exc_tb)
         try:
             # by how much
-            current_car_info.append(price_anal.contents[0].text)
+            current_car_info.append(price_anal[1].strip())
             # above or below
-            current_car_info.append(price_anal.contents[1].strip())
+            current_car_info.append(price_anal[0].text)
         except Exception as e:
             try:
                 current_car_info.append(str(price_anal.contents[1].strip()))
@@ -169,10 +166,10 @@ def load_page(driver):
         pass
     html = driver.page_source
     soup = BeautifulSoup(html, 'html.parser')
-    elements = soup.find_all("div", {"class": "EUQoKn"})
+    elements = soup.find_all("div", {"class": "G_g8iq"})
     # try another class if can't get any info
     if len(elements) == 0:
-        elements = soup.find_all("div", {"class": "_21KssQ _2XEkAU"})
+        elements = soup.find_all("div", {"class": "t9zEoM Xw8J6j"})
     return elements
 
 
@@ -193,21 +190,21 @@ def next_page_exists(driver):
 
 
 def wait_to_load(driver):
-    WebDriverWait(driver, 10).until(ec.visibility_of_element_located((By.CLASS_NAME, "_3K15rt")))
-    time.sleep(3)
+    WebDriverWait(driver, 10).until(ec.visibility_of_element_located((By.CLASS_NAME, "ww9K1z")))
+    time.sleep(5)
+
 
 def wait_for_listing(driver):
-    WebDriverWait(driver, 15).until(ec.visibility_of_element_located((By.CLASS_NAME, "_3LnDeD")))
+    WebDriverWait(driver, 15).until(ec.visibility_of_element_located((By.CLASS_NAME, "_NRfIE")))
     time.sleep(3)
 
 def next_page(driver, first=True):
     if first:
-        button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf >\
-            div._5K96zi._3QziWR > div.UiqxWZ._2nqerW > div.VXnaDS._55Yy37 > button', driver)
+        button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div > div.AtkUbr >\
+            div.lJPoT2.L_uQTe > div.KCJEd3._0ma0Q > div.YTDx_x.G_wJFb > button', driver)
     else:
-        button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf >\
-            div._5K96zi._3QziWR > div.UiqxWZ._2nqerW > div.VXnaDS._55Yy37 > button:nth-child(4)', driver)
-
+        button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div > div.AtkUbr >\
+            div.lJPoT2.L_uQTe > div.KCJEd3._0ma0Q > div.YTDx_x.G_wJFb > button:nth-child(4) > span', driver)
 
 # unclick the checkbox that shows cars with no price
 def remove_no_price(driver):
@@ -225,8 +222,8 @@ def banner_close(driver):
 
 # press the clear button for CPO/used/new
 def remove_cpo(driver):
-    button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
-                                       div._3K15rt > div:nth-child(2) > fieldset:nth-child(13) > legend > button",
+    button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.AtkUbr > div._z38iJ > \
+                  div.xexhq_ > div:nth-child(2) > fieldset:nth-child(14) > ul > li:nth-child(2) > label > p",
                  driver)
     button_click("css", ".mT6hMz", driver)
 
@@ -354,7 +351,7 @@ def remove_auth_del_spon(raw_elements, mileage):
             elements.append(x)
         else:
             print("removed car")
-            print("sponsored: {}".format(sponsored))
+            print("sponsored: {}".format("sponsored"))
             print("transfer: {}".format(transfer))
             print("authorized: {}".format(authorized))
             print("not_sure: {}".format(not_sure))
