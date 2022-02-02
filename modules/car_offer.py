@@ -72,7 +72,7 @@ def select_color(driver, color):
     # pick the color
     selector.click()
     # might need to figure this out
-    WebDriverWait(driver, 60).until(ec.element_to_be_clickable((By.XPATH, '//*[text()="{}"]'.format(color[0]))))
+    WebDriverWait(driver, 30).until(ec.element_to_be_clickable((By.XPATH, '//*[text()="{}"]'.format(color[0]))))
     selector.find_element_by_xpath("//*[text()='{}']".format(color[0])).click()
 
 def get_car_info(car):
@@ -163,14 +163,14 @@ def has_navi(driver, navi):
 
 def press_vehicle_option(driver):
     driver.find_element(By.CSS_SELECTOR, "#optionsCard > button").click()
-    WebDriverWait(driver, 60).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "#trimsCard > h5")))
+    WebDriverWait(driver, 20).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "#trimsCard > h5")))
 
 def next_condition(driver):
     next = driver.find_element_by_xpath("//*[text()='{}']".format('Next: Condition'))
     next.find_element_by_xpath("./..").click()
 
 def certified_no(driver):
-    WebDriverWait(driver, 60).until(ec.element_to_be_clickable((By.CSS_SELECTOR,
+    WebDriverWait(driver, 20).until(ec.element_to_be_clickable((By.CSS_SELECTOR,
                                                                "#IS_CPO > div > button:nth-child(2)")))
     driver.find_element_by_css_selector("#IS_CPO > div > button:nth-child(2)").click()
 
@@ -184,9 +184,9 @@ def select_accidents(driver, accidents):
         button = None
     # select
     if button:
-        WebDriverWait(driver, 60).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector_base + button)))
+        WebDriverWait(driver, 20).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector_base + button)))
         driver.find_element_by_css_selector(selector_base + button).click()
-        WebDriverWait(driver, 60).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector_base + button)))
+        WebDriverWait(driver, 20).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector_base + button)))
         driver.find_element_by_css_selector(selector_base + button).click()
         certified_no(driver)
 
@@ -250,7 +250,7 @@ def get_price(driver, vin, make_model):
         if price != "FAIL":
             break
         attempt = attempt + 1
-        time.sleep(20)
+        time.sleep(10)
     # if we got nothing in the end scroll to bottom, take a screenshot
     if price == "FAIL":
         driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
@@ -307,7 +307,7 @@ def kbb_discrepancy_fix(driver, details):
 
 def select_style(driver, make_model=""):
     selector = "#optionsCard > div:nth-child(1) > div > div > div"
-    WebDriverWait(driver, 60).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+    WebDriverWait(driver, 30).until(ec.element_to_be_clickable((By.CSS_SELECTOR, selector)))
     style = driver.find_element_by_css_selector(selector)
 
     if style.text == "Style":
@@ -374,7 +374,8 @@ def check_if_entered(driver):
     try:
         # WebDriverWait(driver, 15).until(ec.presence_of_element_located((By.XPATH, "//*[text()='{}']".format(string))))
         # instead of waiting for the text that a car is intered it's faster to wait for the style box, faster overall
-        WebDriverWait(driver, 15).until(ec.presence_of_element_located((By.XPATH, "//*[text()='{}']".format("STYLE"))))
+        WebDriverWait(driver, 15).until(ec.presence_of_element_located((By.XPATH, "//*[text()='{}']".
+                                                                        format("MILEAGE"))))
         entered_already = None
     except Exception:
         entered_already = True

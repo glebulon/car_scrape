@@ -166,10 +166,12 @@ def load_page(driver):
         pass
     html = driver.page_source
     soup = BeautifulSoup(html, 'html.parser')
-    elements = soup.find_all("div", {"class": "G_g8iq"})
-    # try another class if can't get any info
-    if len(elements) == 0:
-        elements = soup.find_all("div", {"class": "t9zEoM Xw8J6j"})
+    elements = soup.find_all("div", {"class": "VXAW8U"})
+    # # try another class if can't get any info
+    # if len(elements) == 0:
+    #     elements = soup.find_all("div", {"class": "t9zEoM Xw8J6j"})
+    # if len(elements) == 0:
+    #     elements = soup.find_all("div", {"class": "_ajVSv WLAITe wcSLm2"})
     return elements
 
 
@@ -222,10 +224,8 @@ def banner_close(driver):
 
 # press the clear button for CPO/used/new
 def remove_cpo(driver):
-    button_click("selector", "#cargurus-listing-search > div:nth-child(1) > div > div.AtkUbr > div._z38iJ > \
-                  div.xexhq_ > div:nth-child(2) > fieldset:nth-child(14) > ul > li:nth-child(2) > label > p",
-                 driver)
-    button_click("css", ".mT6hMz", driver)
+    # click the button for "Used"
+    button_click("xpath", "//*[text()='{}']".format('Used'), driver)
 
 
 # select good priced car only
@@ -260,8 +260,8 @@ def good_price_only(driver, deal):
 def get_mileage(element):
     mileage = 0
     for i in element.find_all('p'):
-        if re.search(r" mi$", str(i.contents[0])):
-            mileage = int(str(i.contents[0]).strip(' mi').replace(',', ''))
+        if re.search(r" mi$", str(i.text)):
+            mileage = int(str(i.text).strip(' mi').replace(',', ''))
     # if mileage == 0:
     #     no_mileage = ""
     return mileage
@@ -306,15 +306,15 @@ def hide_delivery(driver):
 # select the year range
 def year_range(start, end, driver):
     try:
-        driver.find_element_by_name("selectedStartYear").click()
-        Select(driver.find_element_by_name("selectedStartYear")).select_by_visible_text(str(start))
-        driver.find_element_by_name("selectedStartYear").click()
+        driver.find_element_by_css_selector("[aria-label='Select Minimum Year']").click()
+        Select(driver.find_element_by_css_selector("[aria-label='Select Minimum Year']")).select_by_visible_text(str(start))
+        driver.find_element_by_css_selector("[aria-label='Select Minimum Year']").click()
     except Exception:
         print("Couldn't find the start year")
     try:
-        driver.find_element_by_name("selectedEndYear").click()
-        Select(driver.find_element_by_name("selectedEndYear")).select_by_visible_text(str(end))
-        driver.find_element_by_name("selectedEndYear").click()
+        driver.find_element_by_css_selector("[aria-label='Select Maximum Year']").click()
+        Select(driver.find_element_by_css_selector("[aria-label='Select Maximum Year']")).select_by_visible_text(str(end))
+        driver.find_element_by_css_selector("[aria-label='Select Maximum Year']").click()
     except Exception:
         print("Couldn't find the end year")
     driver.find_element_by_xpath("(//button[@type='submit'])[2]").click()
@@ -324,18 +324,6 @@ def year_range(start, end, driver):
 def remove_auth_del_spon(raw_elements, mileage):
     # move to a new list all elements that do NOT contain:
     # Sponsored, Authorized.*Dealer, are not not empty and if mileage is provided filter on mileage
-
-    # elements = [x for x in raw_elements if (
-    #             not re.search('Sponsored', x.text))
-    #             and (not re.search('store transfer', x.text))
-    #             and (not re.search('Authorized.*Dealer', x.text))
-    #             and (x.select('#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > \
-    #                 div._5K96zi._3QziWR > div._3LnDeD > div:nth-child(6) > div > a > div._4yP575._2PDkfp > div > \
-    #                 div._37Fr4g > div > svg') == [])
-    #             and (x.text.lower() != '') and (get_mileage(x) != 0)
-    #             and ((not mileage) or (get_mileage(x) < mileage))
-    #             ]
-
     elements = []
     for x in raw_elements:
         sponsored = re.search('Sponsored', x.text)
@@ -377,22 +365,22 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
             models = json.load(f)
         model_code = models[model]
 
-        url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}\
-            &showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE&\
-            entitySelectingHelper.selectedEntity={2}".format(zip, distance, model_code)
+        url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}" \
+              "&showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE&" \
+              "entitySelectingHelper.selectedEntity={2}".format(zip, distance, model_code)
     if make:
         with open('car_makes.json') as f:
             makes = json.load(f)
         make_code = makes[make]
 
-        url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}\
-            &showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE&\
-                entitySelectingHelper.selectedEntity={2}'".format(zip, distance, make_code)
+        url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}" \
+              "&showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE&" \
+              "entitySelectingHelper.selectedEntity={2}".format(zip, distance, make_code)
 
     if not make and not model and not dealer_url:
-        url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}\
-            &showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE"\
-                .format(zip, distance)
+        url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}" \
+              "&showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE" \
+              .format(zip, distance)
 
     # load page
     driver.get(url)
@@ -401,7 +389,8 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
     wait_for_listing(driver)
     # select years if provided
     if not dealer_url:
-        if (start or end) and model:
+        # if (start or end) and model:
+        if (start or end):
             year_range(start, end, driver)
         # select deal if option passed
         if deal_quality:
