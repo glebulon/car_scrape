@@ -124,7 +124,8 @@ def enter_vin(driver, vin, failed_vin):
     except Exception:
         # check for errors, if errors add to the list
         errors_list = ["Unable to process the request. This vehicle has an unsupported country of origin.",
-                       "This vehicle is ineligible. Pleas try another VIN."]
+                       "This vehicle is ineligible. Pleas try another VIN.",
+                       "Sorry. This vehicle cannot be submitted because it has a branded title reported."]
         for i in errors_list:
             if driver.find_elements_by_xpath("//*[text()='{}']".format(i)):
                 print("Can't get a price on this car: {}".format(vin))
@@ -431,6 +432,7 @@ def enter_car(driver, cars):
                 driver.save_screenshot("screenshots/caroffer/enter_details-{}-{}.png".format(car[1], car[8]))
                 driver.refresh()
                 continue
+        m.fancysleep(20)
         # return the list back to scrape.py
         return failed_vin
     else:
