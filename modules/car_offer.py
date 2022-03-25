@@ -219,7 +219,7 @@ def get_price(driver, vin, make_model):
     driver.find_element_by_css_selector(selector).clear()
     driver.find_element_by_css_selector(selector).send_keys(vin)
     attempt = 1
-    while attempt < 5:
+    while attempt < 2:
         try:
             # refresh trades
             driver.find_element_by_css_selector('#content > div > div > div > \
@@ -232,7 +232,7 @@ def get_price(driver, vin, make_model):
         got_price = False
         try:
             selector = "div.offerAmount___ooWOd.highlighted___2pqMl"
-            WebDriverWait(driver, 20).until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
+            WebDriverWait(driver, 5).until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
             price = driver.find_element_by_css_selector(selector).text
             got_price = True
         except Exception:
@@ -242,7 +242,7 @@ def get_price(driver, vin, make_model):
         if not got_price:
             try:
                 selector = "div.offerAmount___ooWOd"
-                WebDriverWait(driver, 20).until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
+                WebDriverWait(driver, 5).until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
                 price = driver.find_element_by_css_selector(selector).text
             except Exception:
                 price = "FAIL"
@@ -251,7 +251,7 @@ def get_price(driver, vin, make_model):
         if price != "FAIL":
             break
         attempt = attempt + 1
-        time.sleep(10)
+        time.sleep(5)
     # if we got nothing in the end scroll to bottom, take a screenshot
     if price == "FAIL":
         driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
@@ -423,6 +423,7 @@ def enter_car(driver, cars):
                     next_condition(driver)
                     certified_no(driver)
                     select_accidents(driver, details['accidents'])
+                    m.fancysleep(20)
                     get_offer_button(driver)
                 # raise exception if the vin is in the list
                 elif details['vin'] in failed_vin:
@@ -432,7 +433,6 @@ def enter_car(driver, cars):
                 driver.save_screenshot("screenshots/caroffer/enter_details-{}-{}.png".format(car[1], car[8]))
                 driver.refresh()
                 continue
-        m.fancysleep(20)
         # return the list back to scrape.py
         return failed_vin
     else:
@@ -453,4 +453,11 @@ def get_car_price(driver, cars, failed_vin):
         else:
             car.append(failed_vin[details['vin']])
         car_number += 1
+    # go through and only run cars that failed
+    for car in cars:
+        if car[29] == 'FAIL':
+            details = get_car_info(car)
+            print("Getting offer on the second round")
+            print("    VIN: {}".format(details['vin']))
+            car[29] = get_price(driver, details['vin'], details['make_model'])
     return cars

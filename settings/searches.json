@@ -1,13 +1,14 @@
-[
+[ 
     {
-        "make": "",
-        "model": "rogue",
-        "start_year": "2016",
-        "end_year": "2021",
+        "make": "ford",
+        "model": "",
+        "start_year": "2010",
+        "end_year": "2022",
         "zipcode": "02062",
-        "distance": 75,
+        "distance": 100,
         "deal_quality": "good",
-        "number_of_listings": 50,
-        "mileage": 50000
+        "number_of_listings": 5,
+        "mileage": 100000,
+        "source": "autotrader"
     }
 ]

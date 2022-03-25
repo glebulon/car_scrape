@@ -125,6 +125,6 @@ def check_get_key(dict, key):
         return ""
 
 def fancysleep(secs):
-    for i in range(secs,0,-1):
-        print(f"{i}", end="\r", flush=True)
+    for i in range(secs, 0, -1):
+        print(f"Sleeping: {i}", end="\r", flush=True)
         time.sleep(1)

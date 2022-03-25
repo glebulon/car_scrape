@@ -4,6 +4,7 @@ import logging
 import time
 
 # my own functions
+import modules.auto_trader as atrad
 import modules.car_fax as cfax
 import modules.car_gurus as cgur
 import modules.car_offer as coffer
@@ -29,10 +30,16 @@ if searches:
         logging.critical(search)
         # run search
         cars = []
-        cars = cars + cgur.cars(driver, make=search['make'], model=search['model'], zip=search['zipcode'],
-                                distance=search['distance'], number_of_listings=search['number_of_listings'],
-                                start=search['start_year'], end=search['end_year'], mileage=search['mileage'],
-                                deal_quality=search['deal_quality'])
+        if search['source'] == "cargurus":
+            cars = cars + cgur.cars(driver, make=search['make'], model=search['model'], zip=search['zipcode'],
+                                    distance=search['distance'], number_of_listings=search['number_of_listings'],
+                                    start=search['start_year'], end=search['end_year'], mileage=search['mileage'],
+                                    deal_quality=search['deal_quality'])
+        elif search['source'] == "autotrader":
+            cars = cars + atrad.cars(driver, make=search['make'], model=search['model'], zip=search['zipcode'],
+                                     distance=search['distance'], number_of_listings=search['number_of_listings'],
+                                     start=search['start_year'], end=search['end_year'], mileage=search['mileage'],
+                                     deal_quality=search['deal_quality'])
         print("Finished cargurus, starting carfax")
         print("Cars found: {}".format(len(cars)))
         # populate the carfax history
