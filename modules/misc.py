@@ -3,7 +3,7 @@
 import json
 import uuid
 import time
-
+from selenium.webdriver.support.ui import Select, WebDriverWait
 
 # read in search
 def search_settings_read():
@@ -128,3 +128,7 @@ def fancysleep(secs):
     for i in range(secs, 0, -1):
         print(f"Sleeping: {i}", end="\r", flush=True)
         time.sleep(1)
+
+def wait_for_page_to_load(driver, timeout=30):
+    WebDriverWait(driver, timeout).until(lambda driver: driver.execute_script('return \
+        document.readyState') == 'complete')

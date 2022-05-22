@@ -14,26 +14,39 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 
 import modules.misc as m
 
+def select_make_model(driver, _make_model, type):
+    code = "makeCode" if type == "make" else "ModelCode"
+    # wait until the dropdown is clickable
+    WebDriverWait(driver, 5).until(ec.element_to_be_clickable((By.NAME, code)))
+    # select dropdown
+    _dropdown = driver.find_element_by_name(code)
+    # open drowp down
+    _dropdown.click()
+    # click the car
+    _dropdown.find_element(By.XPATH, "//option[. = '{}']".format(_make_model)).click()
+    # click on the background
+    # driver.find_element_by_xpath("//html").click()
 
+def enter_zip_code(driver, zip):
+    zip_code = driver.find_element_by_name("zipcode")
+    zip_code.clear()
+    time.sleep(1)
+    zip_code.clear()
+    zip_code.send_keys(zip)
 
-# a=driver.find_element_by_name("makeCode")
-# "modelCode"
-# for make in makes:
-#     dropdown = driver.find_element_by_name("makeCode")
-#     dropdown.find_element(By.XPATH, "//option[. = '{}']".format(make)).click()
-#     dropdown2 = driver.find_element_by_name("modelCode")
-#     modelselections = Select(dropdown2)
-#     cars[make] = [x.text for x in modelselections.options]
+def press_search(driver):
+    # press search
+    driver.find_element_by_xpath("//html").click()
+    driver.find_element_by_id("search").click()
 
-# d = Select(dropdown)
-# d.select_by_visible_text("BMW")
+# enter the radius
+def select_radius(driver, distance):
+    radius = driver.find_element_by_name("searchRadius")
+    radius.click()
+    radius.find_element(By.XPATH, "//option[. = '{} Miles']".format(distance)).click()
 
-# z = driver.find_element_by_name("zipcode")
-# z.click()
-# z.clear()
-# z.send_keys("02135")
-
-# driver.find_element_by_id("search").click()
+def remove_delivery(driver):
+    driver.find_element_by_xpath("//*[text()='{}']".format('Include Extended Home Delivery')).click()
 
 # this is the main function, the entry point to the other ones for cargurus
 def cars(driver, model="", make="", zip="02062", distance="3", number_of_listings=0, deal_quality="",
@@ -51,48 +64,32 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
         # capitalize the make, leave model blank
         _make = make.capitalize()
         _model = model
-    
-        
-    if make:
-        with open('car_makes.json') as f:
-            makes = json.load(f)
-        make_code = makes[make]
-
-        url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}" \
-              "&showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE&" \
-              "entitySelectingHelper.selectedEntity={2}".format(zip, distance, make_code)
-
-    if not make and not model and not dealer_url:
-        url = "https://www.cargurus.com/Cars/inventorylisting/viewDetailsFilterViewInventoryListing.action?zip={0}" \
-              "&showNegotiable=true&sortDir=ASC&sourceContext=carGurusHomePageModel&distance={1}&sortType=DEAL_SCORE" \
-              .format(zip, distance)
 
     # load page
-    driver.get(url)
-    # wait to load
-    wait_to_load(driver)
-    wait_for_listing(driver)
-    # select years if provided
-    if not dealer_url:
-        # if (start or end) and model:
-        if (start or end):
-            year_range(start, end, driver)
-        # select deal if option passed
-        if deal_quality:
-            good_price_only(driver, deal_quality)
-        # uncheck cars with no price, don't want those
-        remove_no_price(driver)
-        # remove CPO only cars
-        remove_cpo(driver)
-        # remove delivery cars
-        hide_delivery(driver)
-    # create a list of cars
+    driver.get('https://autotrader.com')
+    # wait to page to load, makes a js call/check
+    m.wait_for_page_to_load(driver)
+
+    if _make:
+        select_make_model(driver, _make, "make")
+    if _model:
+        select_make_model(driver, _model, "model")
+    
+    enter_zip_code(driver, zip)
+    press_search(driver)
+    
+    #select distance
+    select_radius(driver, distance)
+    # don't include home delivery
+    remove_delivery(driver)
+    
+    # stopped here
     cars = []
     page = 1
     # get all possible trims of a given car
     trims = get_trims(driver)
     colors = get_colors(driver)
-    wait_to_load(driver)
+    m.wait_for_page_to_load(driver)
     wait_for_listing(driver)
     # get all cars on the page
     raw_elements = load_page(driver)
@@ -177,10 +174,10 @@ def get_trims(driver):
 
 # get all the possible trims for this car
 def get_colors(driver):
-    try:
-        colors = driver.find_element_by_xpath("//*[@data-cg-ft='filters-panel-filter-color']")
-        colors = colors.find_elements_by_xpath(".//ul/li")
-        color_list = [x.text.split('(')[0] for x in colors]
-        return color_list
-    except Exception:
-        return ["-"]
+    # try:
+    #     colors = driver.find_element_by_xpath("//*[text()='{}']".format('Exterior Color')).click()
+    #     black = driver.find_element_by_xpath("//*[text()='{}']".format('Black'))
+    #     color_list = [x.text.split('(')[0] for x in colors]
+    #     return color_list
+    # except Exception:
+    return ["-"]
