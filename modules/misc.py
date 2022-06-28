@@ -132,3 +132,9 @@ def fancysleep(secs):
 def wait_for_page_to_load(driver, timeout=30):
     WebDriverWait(driver, timeout).until(lambda driver: driver.execute_script('return \
         document.readyState') == 'complete')
+
+def select_from_drop_down(driver, element, text):
+    _find = driver.find_element_by_id(element)
+    _find.click()
+    _select = Select(_find)
+    _select.select_by_visible_text(text)

@@ -1,14 +1,14 @@
 [ 
     {
         "make": "toyota",
-        "model": "camry",
+        "model": "",
         "start_year": "2010",
         "end_year": "2022",
         "zipcode": "02062",
         "distance": 100,
         "deal_quality": "good",
-        "number_of_listings": 5,
+        "number_of_listings": 80,
         "mileage": 100000,
-        "source": "autotrader"
+        "source": "cars"
     }
 ]

@@ -4,7 +4,7 @@ import logging
 import time
 
 # my own functions
-import modules.auto_trader as atrad
+import modules.cars_com as ccom
 import modules.car_fax as cfax
 import modules.car_gurus as cgur
 import modules.car_offer as coffer
@@ -35,12 +35,12 @@ if searches:
                                     distance=search['distance'], number_of_listings=search['number_of_listings'],
                                     start=search['start_year'], end=search['end_year'], mileage=search['mileage'],
                                     deal_quality=search['deal_quality'])
-        elif search['source'] == "autotrader":
-            cars = cars + atrad.cars(driver, make=search['make'], model=search['model'], zip=search['zipcode'],
-                                     distance=search['distance'], number_of_listings=search['number_of_listings'],
-                                     start=search['start_year'], end=search['end_year'], mileage=search['mileage'],
-                                     deal_quality=search['deal_quality'])
-        print("Finished cargurus, starting carfax")
+        elif search['source'] == "cars":
+            cars = cars + ccom.cars(driver, make=search['make'], model=search['model'], zip=search['zipcode'],
+                                    distance=search['distance'], number_of_listings=search['number_of_listings'],
+                                    start=search['start_year'], end=search['end_year'], mileage=search['mileage'],
+                                    deal_quality=search['deal_quality'])
+        print("Finished {}, starting carfax".format(search['source']))
         print("Cars found: {}".format(len(cars)))
         # populate the carfax history
         cars = cfax.populate_carfax_info(cars, driver)

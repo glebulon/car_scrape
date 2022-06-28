@@ -446,12 +446,13 @@ def get_car_price(driver, cars, failed_vin):
     car_number = 1
     for car in cars:
         details = get_car_info(car)
-        print("Getting offer for Car number: {}".format(car_number))
-        print("    VIN: {}".format(details['vin']))
-        if details['vin'] not in failed_vin:
-            car.append(get_price(driver, details['vin'], details['make_model']))
-        else:
-            car.append(failed_vin[details['vin']])
+        if details.get("vin"):
+            print("Getting offer for Car number: {}".format(car_number))
+            print("    VIN: {}".format(details['vin']))
+            if details['vin'] not in failed_vin:
+                car.append(get_price(driver, details['vin'], details['make_model']))
+            else:
+                car.append(failed_vin[details['vin']])
         car_number += 1
     # go through and only run cars that failed
     for car in cars:

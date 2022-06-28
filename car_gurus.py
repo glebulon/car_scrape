@@ -17,11 +17,14 @@ import modules.misc as m
 
 # get information about a specific car
 def car_details(url, href, driver):
-    driver.get(url + href.strip('/NONE'))
+    driver.get(url + href)
     timeout = 60
     try:
         # wait for details to load
-        m.wait_for_page_to_load(driver)
+        WebDriverWait(driver, timeout).until(ec.visibility_of_element_located((By.XPATH, "//*[text()='Vehicle details']")))
+        WebDriverWait(driver, timeout).until(ec.visibility_of_element_located((By.XPATH, "//*[text()='Vehicle history']")))
+        # WebDriverWait(driver, timeout).until(ec.visibility_of_element_located((By.CLASS_NAME, "_mEDnu")))
+        # WebDriverWait(driver, timeout).until(ec.visibility_of_element_located((By.CLASS_NAME, "v8gU2_")))
         # close banner if it's there
         banner_close(driver)
         # click the details tab
@@ -30,7 +33,6 @@ def car_details(url, href, driver):
         # print("Timed out waiting for page to load")
         pass
     try:
-        time.sleep(10)
         current_car_html = driver.page_source
         current_car_soup = BeautifulSoup(current_car_html, 'html.parser')
         # data model is follows
@@ -38,19 +40,15 @@ def car_details(url, href, driver):
         # leather, navigation, car link, dealer info, dealership town, distance from zip, days on cargurus, accidents,
         # from cargurus, title from cargurus, price vs market ]
         current_car_info = []
-        try:
-            year_make_model = current_car_soup.find_all(class_="W4dm8t")[0].text
-            # add year
-            current_car_info.append(year_make_model[:4])
-            # add make/model
-            make_model = year_make_model[5:].split(' - ')[0]
-            current_car_info.append(make_model)
-        except Exception:
-            current_car_info.append("-")
-            current_car_info.append("-")
+        year_make_model = current_car_soup.find_all(class_="tOvI3U")[0].text
+        # add year
+        current_car_info.append(year_make_model[:4])
+        # add make/model
+        make_model = year_make_model[5:].split(' - ')[0]
+        current_car_info.append(make_model)
         # get all info available
-        values = current_car_soup.find_all(class_="RB5wfO")
-        fields = current_car_soup.find_all(class_="Rv7LmM")
+        values = current_car_soup.find_all(class_="tSbcGe")
+        fields = current_car_soup.find_all(class_="wv1MO3")
         element = 0
         details = {}
         for i in fields:
@@ -65,48 +63,42 @@ def car_details(url, href, driver):
 
         # moon/sun
         moon = "no"
-        try:
-            if ("moonroof" in details['Major Options'].lower()) or ("sunroof" in details['Major Options'].lower()):
-                moon = "yes"
-        except Exception:
-            pass
+        if ("moonroof" in details['Major Options'].lower()) or ("sunroof" in details['Major Options'].lower()):
+            moon = "yes"
         current_car_info.append(moon)
         # leather seats
         leather = "no"
-        try:
-            if "leather" in details['Major Options'].lower():
-                leather = "yes"
-        except Exception:
-            pass
+        if "leather" in details['Major Options'].lower():
+            leather = "yes"
         current_car_info.append(leather)
         # navigation
         navigation = "no"
-        try:
-            if "navigation" in details['Major Options'].lower():
-                navigation = "yes"
-        except Exception:
-            pass
+        if "navigation" in details['Major Options'].lower():
+            navigation = "yes"
         current_car_info.append(navigation)
         # add car link
         current_car_info.append("".join((url + href).split()))
         # dealer info
         try:
-            dealer_info = current_car_soup.find("section", {"class": "Z57IbY"}).contents[0].text
+            dealer_info = current_car_soup.find("section", {"class": "_ruC5I _mEDnu"}).contents[0].text
         except Exception as e:
             dealer_info = "-"
         current_car_info.append(dealer_info)
         # dealer phone number
         try:
-            phone = current_car_soup.find("a", {"class": "J7uIso"})['href'].strip('tel:')
+            phone = current_car_soup.find("a", {"class": "wHoz5o"})['href'].strip('tel:')
         except Exception as e:
-            phone = "-"
+            try:
+                phone = current_car_soup.find_all(class_="_68Dk5")[0].text
+            except Exception as e:
+                phone = "-"
         current_car_info.append(phone)
         # leaving blank, vic wants the manager's name
         name = "-"
         current_car_info.append(name)
         try:
-            # distance from zipcode sF5gNg
-            distance_town = current_car_soup.find_all(class_="sF5gNg")[0].text
+            # distance from zipcode
+            distance_town = current_car_soup.find_all(class_="obQcJn")[0].text
             # town
             current_car_info.append(distance_town.split("·")[0].strip())
         except Exception as e:
@@ -118,23 +110,25 @@ def car_details(url, href, driver):
             current_car_info.append("-")
         # days on cargurus
         try:
-            current_car_info.append(driver.find_element_by_class_name("viv7KM")
-                                    .text.split('\n')[2].split()[0])
+            days = current_car_soup.find_all(class_="ksX2ni")[0].text
+            if "days" not in days:
+                days = current_car_soup.find_all(class_="BiX5ju")[0].text
+            current_car_info.append(days)
         except Exception as e:
             current_car_info.append("-")
         # accidents from cargurus
         try:
-            current_car_info.append(current_car_soup.find_all(class_="Df_R9I")[0].text.strip("Accident Check").
+            current_car_info.append(current_car_soup.find_all(class_="XMMcff")[1].text.strip("Accident Check").
                                     strip(" repor"))
             # title issues
-            current_car_info.append(current_car_soup.find_all(class_="ma7OK4")[0].text.strip("Title Check"))
+            current_car_info.append(current_car_soup.find_all(class_="XMMcff")[0].text.strip("Title Check"))
         except Exception:
             current_car_info.append("-")
             current_car_info.append("-")
         # price versus market
         # store the element
         try:
-            price_anal = current_car_soup.find(class_="_3TqHJ").contents
+            price_anal = current_car_soup.find(class_="fJS7pW").contents
         except Exception as e:
             print("url: {}".format(url + href))
             print(e)
@@ -163,9 +157,8 @@ def car_details(url, href, driver):
 
 
 # load the page and waits for a specific element to be there
-
 def load_page(driver):
-    timeout = 60
+    timeout = 120
     # wait for the javascript to load
     try:
         WebDriverWait(driver, timeout).until(ec.visibility_of_element_located((By.ID, "cargurus-listing-search")))
@@ -174,7 +167,12 @@ def load_page(driver):
         pass
     html = driver.page_source
     soup = BeautifulSoup(html, 'html.parser')
-    elements = soup.find_all("div", {"class": "MOfIEd XcutUU prRsnF"})
+    elements = soup.find_all("div", {"class": "lmXF4B c7jzqC A1f6zD"})
+    # # try another class if can't get any info
+    # if len(elements) == 0:
+    #     elements = soup.find_all("div", {"class": "t9zEoM Xw8J6j"})
+    # if len(elements) == 0:
+    #     elements = soup.find_all("div", {"class": "_ajVSv WLAITe wcSLm2"})
     return elements
 
 
@@ -198,21 +196,17 @@ def wait_to_load(driver):
     WebDriverWait(driver, 10).until(ec.visibility_of_element_located((By.CLASS_NAME, "ww9K1z")))
     time.sleep(5)
 
-
 def wait_for_listing(driver):
-    WebDriverWait(driver, 15).until(ec.visibility_of_element_located((By.CLASS_NAME, "_NRfIE")))
+    WebDriverWait(driver, 15).until(ec.visibility_of_element_located((By.CLASS_NAME, "IWo5PZ.orzDm5")))
     time.sleep(3)
 
 def next_page(driver, first=True):
-    WebDriverWait(driver, 15).until(ec.visibility_of_element_located((By.XPATH, "//*[text()='Next page']")))
-    driver.find_element_by_xpath("//*[text()='{}']".format('Next page')).click()
-
-def wait_for_ad(driver):
-    try:
-        WebDriverWait(driver, 15).until(ec.visibility_of_element_located((By.CLASS_NAME, "ranxnv")))
-    except Exception:
-        pass
-    time.sleep(10)
+    if first:
+        button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div > div.AtkUbr >\
+            div.lJPoT2.L_uQTe > div.KCJEd3._0ma0Q > div.YTDx_x.G_wJFb > button', driver)
+    else:
+        button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div > div.AtkUbr >\
+            div.lJPoT2.L_uQTe > div.KCJEd3._0ma0Q > div.YTDx_x.G_wJFb > button:nth-child(4) > span', driver)
 
 # unclick the checkbox that shows cars with no price
 def remove_no_price(driver):
@@ -225,7 +219,6 @@ def remove_no_price(driver):
 def banner_close(driver):
     try:
         driver.find_element_by_xpath("//*[text()='{}']".format('No thanks')).click()
-        driver.find_element_by_xpath("//*[text()='{}']".format('Keep shopping')).click()
     except Exception:
         pass
 
@@ -286,7 +279,7 @@ def button_click(type, identifier, driver):
             driver.find_element(By.CSS_SELECTOR, identifier).click()
     except Exception as e:
         logging.error(e)
-    m.wait_for_page_to_load(driver)
+    m.wait_for_page_to_load(driver, 90)
 
 
 # click the detials tab, just in case the summary shows up
@@ -304,6 +297,8 @@ def details_tab(driver):
 
 
 def hide_delivery(driver):
+    button_click('selector', '#cargurus-listing-search > div:nth-child(1) > div > div.FwdiZf > div._4VrDe1 > \
+    div._3K15rt > div:nth-child(2) > fieldset:nth-child(5) > label > p', driver)
     # cargurus changed the way they show delivery
     button_click("xpath", "//*[text()='{}']".format("Nearby listings"), driver)
 
@@ -312,19 +307,17 @@ def hide_delivery(driver):
 def year_range(start, end, driver):
     try:
         driver.find_element_by_css_selector("[aria-label='Select Minimum Year']").click()
-        Select(driver.find_element_by_css_selector("[aria-label='Select Minimum Year']")).\
-            select_by_visible_text(str(start))
+        Select(driver.find_element_by_css_selector("[aria-label='Select Minimum Year']")).select_by_visible_text(str(start))
         driver.find_element_by_css_selector("[aria-label='Select Minimum Year']").click()
     except Exception:
         print("Couldn't find the start year")
     try:
         driver.find_element_by_css_selector("[aria-label='Select Maximum Year']").click()
-        Select(driver.find_element_by_css_selector("[aria-label='Select Maximum Year']")).\
-            select_by_visible_text(str(end))
+        Select(driver.find_element_by_css_selector("[aria-label='Select Maximum Year']")).select_by_visible_text(str(end))
         driver.find_element_by_css_selector("[aria-label='Select Maximum Year']").click()
     except Exception:
         print("Couldn't find the end year")
-    driver.find_element_by_xpath("(//button[@type='submit'])[2]").click()
+    # driver.find_element_by_xpath("(//button[@type='submit'])[2]").click()
 
 
 # remove anything that is sponsored, authorized or delivers or above mileage
@@ -392,9 +385,8 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
     # load page
     driver.get(url)
     # wait to load
-    m.wait_for_page_to_load(driver)
-    wait_for_ad(driver)
-    banner_close(driver)
+    m.wait_for_page_to_load(driver, 90)
+    # wait_for_listing(driver)
     # select years if provided
     if not dealer_url:
         # if (start or end) and model:
@@ -415,7 +407,8 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
     # get all possible trims of a given car
     trims = get_trims(driver)
     colors = get_colors(driver)
-    m.wait_for_page_to_load(driver)
+    m.wait_for_page_to_load(driver, 90)
+    wait_for_listing(driver)
     # get all cars on the page
     raw_elements = load_page(driver)
     print("Before filtering: {}".format(len(raw_elements)))
@@ -432,10 +425,15 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
     # and if next page exists
     while ((len(all_elements) < number_of_listings) or (number_of_listings == 0)) and next_page_exists(driver):
         # go to next page, different locators if page 1 or not
-        next_page(driver)
+        if page == 1:
+            next_page(driver, first=True)
+        else:
+            next_page(driver, first=False)
         page += 1
-        wait_for_ad(driver)
+        m.wait_for_page_to_load(driver, 90)
         print("Fetching more cars")
+        # close banner if it's there
+        banner_close(driver)
         raw_elements = load_page(driver)
         print("Before filtering: {}".format(len(raw_elements)))
         if not dealer_url:
@@ -445,7 +443,7 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
         print("After filtering: {}".format(len(elements)))
         for element in elements:
             all_elements.append(element)
-        print("Total cars found: {}".format(len(all_elements)))
+
     # remove all elements that are higher in number than requested number of cars
     if (len(all_elements) > number_of_listings) and (number_of_listings != 0):
         all_elements = all_elements[0:number_of_listings]
