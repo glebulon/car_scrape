@@ -34,6 +34,8 @@ def press_search(driver):
     driver.find_element_by_class_name("sds-button").click()
 
 def select_mileage(driver, mileage):
+    # driver.refresh()
+    # m.fancysleep(10)
     _find = driver.find_element_by_id("mileage-select")
     _select = Select(_find)
     for i in _select.options[1:]:
@@ -318,14 +320,14 @@ def cars(driver, model="", make="", zip="02062", distance="100", number_of_listi
     m.select_from_drop_down(driver, "make-model-maximum-distance", f"{str(distance)} miles")
     enter_zip_code(driver, zip)
     press_search(driver)
-
+    # select max mileage
+    select_mileage(driver, mileage)
+    m.fancysleep(10)
     # select the year range
     m.select_from_drop_down(driver, "year_year_min_select", start)
     m.select_from_drop_down(driver, "year_year_max_select", end)
-
-    # select max mileage
-    select_mileage(driver, mileage)
-
+    # page reloads, wait to load
+    m.fancysleep(10)
     cars = []
     hrefs = []
     page = 1
@@ -342,7 +344,7 @@ def cars(driver, model="", make="", zip="02062", distance="100", number_of_listi
     # get all cars on the page
     cars_on_page = get_cars_on_page(driver)
     ###############
-    print("Page: {}\nBefore filtering: {}".format(page, len(cars_on_page)))
+    print("Page: {}\n   Before filtering: {}".format(page, len(cars_on_page)))
     # z = cars_on_page[0].find_element_by_tag_name("a")
     # z.get_property("href")
     if not dealer_url:
@@ -352,7 +354,7 @@ def cars(driver, model="", make="", zip="02062", distance="100", number_of_listi
         all_cars = cars_on_page
     else:
         all_cars = cars_on_page
-    print("Page: {}\nAfter filtering: {}".format(page, len(all_cars)))
+    print("    After filtering: {}".format(len(all_cars)))
     new_hrefs = [car.find_element_by_tag_name("a").get_attribute("href") for car in cars]
     hrefs.extend(new_hrefs)
     # if either number of listing desired is zero(all of them) or if we got less than we need
@@ -363,7 +365,7 @@ def cars(driver, model="", make="", zip="02062", distance="100", number_of_listi
         next_page(driver)
         page += 1
         cars_on_page = get_cars_on_page(driver)
-        print("Page: {}\nBefore filtering total: {}".format(page, len(cars_on_page)))
+        print("Page: {}\n   Before filtering total: {}".format(page, len(cars_on_page)))
         if not dealer_url:
             cars_after_filter = remove_auth_del_spon(driver, cars_on_page)
             # extend adds elements of one list to another
@@ -373,7 +375,7 @@ def cars(driver, model="", make="", zip="02062", distance="100", number_of_listi
         else:
             new_hrefs = [car.find_element_by_tag_name("a").get_attribute("href") for car in cars_after_filter]
             hrefs.extend(new_hrefs)
-        print("Page: {}\nAfter filtering total: {}".format(page, len(cars_after_filter)))
+        print("   After filtering total: {}".format(len(cars_after_filter)))
 
     print("Total: {}".format(len(hrefs)))
 

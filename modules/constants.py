@@ -12,11 +12,12 @@ options.headless = False
 options.add_argument("--window-size=1920,1080")
 options.add_argument(user_agent)
 options.add_argument("--disable-gpu")
+options.add_argument("--incognito")
 options.add_argument('disable-infobars')
 options.add_argument('--disable-blink-features=AutomationControlled')
 options.add_experimental_option("excludeSwitches", ["enable-automation"])
 options.add_experimental_option('useAutomationExtension', False)
-options.binary_location = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+options.binary_location = r"C:\Program Files (x86)\Google\Chrome Beta\Application\chrome.exe"
 chrome_driver_binary = r"D:\my documents\car_scrape\chromedriver.exe"
 driver = webdriver.Chrome(chrome_driver_binary, chrome_options=options)
 creds = "creds.json"

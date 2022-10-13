@@ -65,7 +65,7 @@ def carfax_login(driver):
         driver.find_element_by_id('landing_signin_item-link').click()
         WebDriverWait(driver, 5).until(ec.element_to_be_clickable((By.ID, "username"))).\
             send_keys(login['carfax']['username'])
-        WebDriverWait(driver, 5).until(ec.element_to_be_clickable((By.ID, "password"))).\
+        WebDriverWait(driver, 5).until(ec.element_to_be_clickable((By.ID, "password-input"))).\
             send_keys(login['carfax']['password'])
         driver.find_element_by_id('login_button').click()
     except Exception as e:

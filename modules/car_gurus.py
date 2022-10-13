@@ -209,7 +209,8 @@ def next_page(driver, first=True):
 
 def wait_for_ad(driver):
     try:
-        WebDriverWait(driver, 15).until(ec.visibility_of_element_located((By.CLASS_NAME, "ranxnv")))
+        WebDriverWait(driver, 10).until(ec.visibility_of_element_located((By.CLASS_NAME, "ranxnv")))
+        WebDriverWait(driver, 20).until(ec.visibility_of_element_located((By.CLASS_NAME, "xrQ7TK.sVu1Jl")))
     except Exception:
         pass
     time.sleep(10)
@@ -223,6 +224,12 @@ def remove_no_price(driver):
 
 # close the stupid popup
 def banner_close(driver):
+    try:
+        ad = driver.find_element_by_class_name("xrQ7TK.sVu1Jl")
+        close = ad.find_element_by_css_selector("[aria-label=Close")
+        close.click()
+    except Exception:
+        pass
     try:
         driver.find_element_by_xpath("//*[text()='{}']".format('No thanks')).click()
         driver.find_element_by_xpath("//*[text()='{}']".format('Keep shopping')).click()
@@ -435,6 +442,7 @@ def cars(driver, model="", make="", zip="02062", distance="3", number_of_listing
         next_page(driver)
         page += 1
         wait_for_ad(driver)
+        banner_close(driver)
         print("Fetching more cars")
         raw_elements = load_page(driver)
         print("Before filtering: {}".format(len(raw_elements)))

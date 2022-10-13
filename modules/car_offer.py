@@ -138,6 +138,10 @@ def enter_mileage(driver, mileage):
     driver.find_element(By.ID, "tradeGradeMileage").click()
     driver.find_element(By.ID, "tradeGradeMileage").send_keys(mileage)
 
+def enter_zipcode(driver, mileage="02062"):
+    WebDriverWait(driver, 60).until(ec.visibility_of_element_located((By.ID, "tradeGradeVehicleZipCode")))
+    driver.find_element(By.ID, "tradeGradeVehicleZipCode").click()
+    driver.find_element(By.ID, "tradeGradeVehicleZipCode").send_keys(mileage)
 
 def has_leather(driver, leather):
     # get all double buttons
@@ -412,6 +416,7 @@ def enter_car(driver, cars):
                     select_style(driver, details['make_model'])
                     enter_mileage(driver, details['mileage'])
                     select_color(driver, details['color'])
+                    enter_zipcode(driver)
                     mileage_is_correct(driver)
                     press_vehicle_option(driver)
                     confirm_trims(driver, details['make_model'])
