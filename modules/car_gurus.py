@@ -209,8 +209,7 @@ def next_page(driver, first=True):
 
 def wait_for_ad(driver):
     try:
-        WebDriverWait(driver, 10).until(ec.visibility_of_element_located((By.CLASS_NAME, "ranxnv")))
-        WebDriverWait(driver, 20).until(ec.visibility_of_element_located((By.CLASS_NAME, "xrQ7TK.sVu1Jl")))
+        WebDriverWait(driver, 20).until(ec.visibility_of_element_located((By.CLASS_NAME, "xrQ7TK.qpOH7U")))
     except Exception:
         pass
     time.sleep(10)
@@ -225,7 +224,7 @@ def remove_no_price(driver):
 # close the stupid popup
 def banner_close(driver):
     try:
-        ad = driver.find_element_by_class_name("xrQ7TK.sVu1Jl")
+        ad = driver.find_element_by_class_name("xrQ7TK.qpOH7U")
         close = ad.find_element_by_css_selector("[aria-label=Close")
         close.click()
     except Exception:
