@@ -49,24 +49,23 @@ def car_details(url, href, driver):
             current_car_info.append("-")
             current_car_info.append("-")
         # get all info available
-        values = current_car_soup.find_all(class_="RB5wfO")
-        fields = current_car_soup.find_all(class_="Rv7LmM")
-        element = 0
-        details = {}
-        for i in fields:
-            details[i.text.strip(':')] = values[element].text
-            element += 1
+        overview_fields = [x.text.strip(":") for x in current_car_soup.find_all(class_="om75fw")]
+        overview_values = [x.text for x in current_car_soup.find_all(class_="BivK6Q")]
+        info = {overview_fields[i]: overview_values[i] for i in range(len(overview_values))}
+        # get a string of all options
+        options = current_car_soup.find_all(class_="PgiQjm")
+        # get the price
+        info["Dealer's Price"] = current_car_soup.find_all(class_="sVIZRf")[0].text
         # list of info that we need
-        elements_list = ["Transmission", "Mileage", "Dealer's Price", "Fuel Type", "Exterior Color",
-                         "Interior Color", "VIN"]
+        elements_list = ["Transmission", "Mileage", "Dealer's Price", "Fuel type", "Exterior color",
+                         "Interior color", "VIN"]
         # pull out info for each and append
         for e in elements_list:
-            current_car_info.append(m.check_get_key(details, e))
-
+            current_car_info.append(m.check_get_key(info, e))
         # moon/sun
         moon = "no"
         try:
-            if ("moonroof" in details['Major Options'].lower()) or ("sunroof" in details['Major Options'].lower()):
+            if ("moonroof" in options.lower()) or ("sunroof" in options.lower()):
                 moon = "yes"
         except Exception:
             pass
@@ -74,7 +73,7 @@ def car_details(url, href, driver):
         # leather seats
         leather = "no"
         try:
-            if "leather" in details['Major Options'].lower():
+            if "leather" in options.lower():
                 leather = "yes"
         except Exception:
             pass
@@ -82,7 +81,7 @@ def car_details(url, href, driver):
         # navigation
         navigation = "no"
         try:
-            if "navigation" in details['Major Options'].lower():
+            if "navigation" in options.lower():
                 navigation = "yes"
         except Exception:
             pass
@@ -91,7 +90,7 @@ def car_details(url, href, driver):
         current_car_info.append("".join((url + href).split()))
         # dealer info
         try:
-            dealer_info = current_car_soup.find("section", {"class": "Z57IbY"}).contents[0].text
+            dealer_info = current_car_soup.find(class_="wwwGjX").text
         except Exception as e:
             dealer_info = "-"
         current_car_info.append(dealer_info)
@@ -118,23 +117,23 @@ def car_details(url, href, driver):
             current_car_info.append("-")
         # days on cargurus
         try:
-            current_car_info.append(driver.find_element_by_class_name("viv7KM")
-                                    .text.split('\n')[2].split()[0])
+            current_car_info.append(current_car_soup.find_all(class_="PaczrG")[0].text.split("·")[1])
         except Exception as e:
             current_car_info.append("-")
         # accidents from cargurus
         try:
-            current_car_info.append(current_car_soup.find_all(class_="Df_R9I")[0].text.strip("Accident Check").
-                                    strip(" repor"))
+            history = current_car_soup.find_all(class_="JX8BPS")
+            # accidents
+            current_car_info.append(history[0].find_all(class_="sc-hKMtZM iIVNFL")[1].text.split()[0])
             # title issues
-            current_car_info.append(current_car_soup.find_all(class_="ma7OK4")[0].text.strip("Title Check"))
+            current_car_info.append(history[0].find_all(class_="sc-hKMtZM iIVNFL")[0].text.split()[0])
         except Exception:
             current_car_info.append("-")
             current_car_info.append("-")
         # price versus market
         # store the element
         try:
-            price_anal = current_car_soup.find(class_="_3TqHJ").contents
+            price_anal = current_car_soup.find_all(class_="FRs1wh")[0].text.split()
         except Exception as e:
             print("url: {}".format(url + href))
             print(e)
@@ -142,16 +141,13 @@ def car_details(url, href, driver):
             traceback.print_exception(exc_type, exc_value, exc_tb)
         try:
             # by how much
-            current_car_info.append(price_anal[1].strip())
+            current_car_info.append(price_anal[-2])
             # above or below
-            current_car_info.append(price_anal[0].text)
+            current_car_info.append(price_anal[-1])
         except Exception as e:
-            try:
-                current_car_info.append(str(price_anal.contents[1].strip()))
-            except Exception as e:
-                # append 2 spots
-                current_car_info.append("-")
-                current_car_info.append("-")
+            # append 2 spots
+            current_car_info.append("-")
+            current_car_info.append("-")
         # return data
         return current_car_info
     except Exception as e:
