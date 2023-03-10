@@ -237,7 +237,7 @@ def get_price(driver, vin, make_model):
         try:
             selector = "div.offerAmount___ooWOd.highlighted___2pqMl"
             WebDriverWait(driver, 5).until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
-            price = driver.find_element_by_css_selector(selector).text
+            price = driver.find_elements_by_css_selector(selector)[1].text
             got_price = True
         except Exception:
             price = "FAIL"
@@ -247,7 +247,7 @@ def get_price(driver, vin, make_model):
             try:
                 selector = "div.offerAmount___ooWOd"
                 WebDriverWait(driver, 5).until(ec.visibility_of_element_located((By.CSS_SELECTOR, selector)))
-                price = driver.find_element_by_css_selector(selector).text
+                price = driver.find_elements_by_css_selector(selector)[1].text
             except Exception:
                 price = "FAIL"
                 pass
