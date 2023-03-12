@@ -405,10 +405,12 @@ def enter_car(driver, cars):
         for car in cars:
             try:
                 details = get_car_info(car)
+                close_popup(driver)
                 print("Entering Car number: {}".format(car_number))
                 print("    VIN: {}".format(details['vin']))
                 car_number += 1
                 driver.refresh()
+                close_popup(driver)
                 # set the dict to what we passed in plus possibly the current car
                 failed_vin = enter_vin(driver, details['vin'], failed_vin)
                 # do this if the car wasn't entered already
@@ -430,6 +432,7 @@ def enter_car(driver, cars):
                     select_accidents(driver, details['accidents'])
                     m.fancysleep(20)
                     get_offer_button(driver)
+                    close_popup(driver)
                 # raise exception if the vin is in the list
                 elif details['vin'] in failed_vin:
                     raise Exception
@@ -467,3 +470,10 @@ def get_car_price(driver, cars, failed_vin):
             print("    VIN: {}".format(details['vin']))
             car[29] = get_price(driver, details['vin'], details['make_model'])
     return cars
+
+
+def close_popup(driver):
+    try:
+        driver.find_element_by_css_selector('[aria-label="Close"]').click()
+    except:
+        pass
